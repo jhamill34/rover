@@ -1,10 +1,13 @@
+//!
+
 use json_pointer::JsonPointer;
 
 use crate::{
     action::Action,
-    state::{index::DocIndex, SearchState, State, Step},
+    state::{index::Doc, Search, State, Step},
 };
 
+///
 pub fn reducer(mut state: State, action: Action) -> State {
     match action {
         Action::SetCurrentPage { page } => {
@@ -29,11 +32,11 @@ pub fn reducer(mut state: State, action: Action) -> State {
                 if let Some(selected_children) = state.index.adj_list.get(selected_path) {
                     if !selected_children.is_empty() {
                         let mut step = Step {
-                            options: selected_children.to_vec(),
+                            options: selected_children.clone(),
                             selected: 0,
                         };
 
-                        std::mem::swap(&mut state.nav_state.current, &mut step);
+                        core::mem::swap(&mut state.nav_state.current, &mut step);
                         state.nav_state.history.push(step);
                     }
                 }
@@ -70,7 +73,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::SearchSetValue { value } => State {
-            search_state: SearchState { value },
+            search_state: Search { value },
             ..state
         },
         Action::DocumentReplaceCurrent { value } => {
@@ -86,7 +89,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                     .and_then(|pointer| pointer.get_mut(&mut state.doc).ok());
 
                 if let Some(existing) = existing {
-                    let index = DocIndex::build_from(&value);
+                    let index = Doc::build_from(&value);
                     let root = index.adj_list.get(&index.root).cloned().unwrap_or_default();
                     state.index.adj_list.insert(path.clone(), root);
                     *existing = value;

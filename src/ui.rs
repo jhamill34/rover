@@ -1,3 +1,7 @@
+#![allow(clippy::too_many_lines)]
+
+//!
+
 use std::io;
 
 use crossterm::{
@@ -16,6 +20,7 @@ use tui::{
 
 use crate::state::{Page, State};
 
+///
 pub fn configure_terminal() -> anyhow::Result<Terminal<CrosstermBackend<io::Stdout>>> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -26,14 +31,16 @@ pub fn configure_terminal() -> anyhow::Result<Terminal<CrosstermBackend<io::Stdo
     Ok(terminal)
 }
 
+///
 pub fn ui<B: Backend>(frame: &mut Frame<B>, state: &State) {
     match state.current_page {
-        Page::Nav => nav_ui(frame, state),
-        Page::Search => search_ui(frame, state),
+        Page::Nav => nav(frame, state),
+        Page::Search => search(frame, state),
     }
 }
 
-pub fn nav_ui<B: Backend>(frame: &mut Frame<B>, state: &State) {
+///
+pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
     let main_chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
@@ -149,11 +156,11 @@ pub fn nav_ui<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 .map(|line| Spans::from(Span::from(line)))
                 .collect();
 
-            let next = Block::default().title("Preview").borders(Borders::ALL);
+            let preview = Block::default().title("Preview").borders(Borders::ALL);
 
-            let next = Paragraph::new(text).block(next);
+            let preview = Paragraph::new(text).block(preview);
 
-            frame.render_widget(next, chunks[2]);
+            frame.render_widget(preview, chunks[2]);
         } else {
             let next = Block::default().title("Preview").borders(Borders::ALL);
 
@@ -166,7 +173,8 @@ pub fn nav_ui<B: Backend>(frame: &mut Frame<B>, state: &State) {
     }
 }
 
-fn search_ui<B: Backend>(frame: &mut Frame<B>, state: &State) {
+///
+fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)

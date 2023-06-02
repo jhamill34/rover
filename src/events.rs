@@ -1,7 +1,15 @@
+#![allow(clippy::too_many_lines)]
+
+//!
+
+extern crate alloc;
+use alloc::sync::Arc;
+
+use core::time::Duration;
+
 use std::{
     io,
-    sync::{Arc, Mutex},
-    time::Duration,
+    sync::Mutex,
 };
 
 use crossterm::event::{self, poll, Event, KeyCode, KeyEvent, KeyModifiers};
@@ -11,14 +19,15 @@ use tui::backend::Backend;
 
 use crate::{
     action::Action,
-    lifecycle::ApplicationLifecycle,
+    lifecycle::Application,
     state::{Page, State},
     util::{editor, save_doc},
 };
 
+///
 pub async fn event_listener<R, B>(
     store: Store<State, Action, R>,
-    lifecycle: Arc<Mutex<ApplicationLifecycle<B>>>,
+    lifecycle: Arc<Mutex<Application<B>>>,
 ) -> anyhow::Result<()>
 where
     R: Reducer<State, Action> + Send + Sync + 'static,
@@ -70,8 +79,7 @@ where
                                             .options
                                             .get(state.nav_state.current.selected)
                                             .and_then(|path| state.index.adj_list.get(path))
-                                            .map(|children| children.len())
-                                            .unwrap_or(0)
+                                            .map_or(0, Vec::len)
                                     })
                                     .await;
 
@@ -103,7 +111,7 @@ where
                                     })
                                     .await;
 
-                                let new_value = editor(existing_value)?;
+                                let new_value = editor(&existing_value)?;
 
                                 {
                                     let mut lifecycle = lifecycle.lock().unwrap();
@@ -122,7 +130,7 @@ where
                                 let file_name =
                                     store.select(|state: &State| state.file_name.clone()).await;
                                 let doc = store.select(|state: &State| state.doc.clone()).await;
-                                save_doc(&file_name, doc)?;
+                                save_doc(&file_name, &doc)?;
                             }
                             KeyEvent {
                                 code: KeyCode::Char('g'),
@@ -138,14 +146,11 @@ where
                             } => {
                                 store
                                     .dispatch(Action::SetCurrentPage { page: Page::Search })
-                                    .await
+                                    .await;
                             }
                             KeyEvent {
-                                code: KeyCode::Char('q'),
+                                code: KeyCode::Char('q') | KeyCode::Esc,
                                 ..
-                            }
-                            | KeyEvent {
-                                code: KeyCode::Esc, ..
                             }
                             | KeyEvent {
                                 code: KeyCode::Char('c'),
@@ -161,12 +166,7 @@ where
                         match key {
                             KeyEvent {
                                 code: KeyCode::Char(ch),
-                                modifiers: KeyModifiers::SHIFT,
-                                ..
-                            }
-                            | KeyEvent {
-                                code: KeyCode::Char(ch),
-                                modifiers: KeyModifiers::NONE,
+                                modifiers: KeyModifiers::SHIFT | KeyModifiers::NONE,
                                 ..
                             } => {
                                 let mut current = store
@@ -200,7 +200,7 @@ where
                                     .await;
                                 store
                                     .dispatch(Action::SetCurrentPage { page: Page::Nav })
-                                    .await
+                                    .await;
                             }
                             KeyEvent {
                                 code: KeyCode::Esc, ..

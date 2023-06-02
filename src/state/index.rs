@@ -1,18 +1,26 @@
+//!
+
 use std::collections::{HashMap, HashSet};
 
 use json_pointer::JsonPointer;
 
-pub struct DocIndex {
+///
+pub struct Doc {
+    ///
     pub root: String,
+
+    ///
     pub adj_list: HashMap<String, Vec<String>>,
 }
 
+///
 pub const ROOT_PATH: &str = "#";
 
-impl DocIndex {
+impl Doc {
+    ///
     pub fn build_from(doc: &serde_json::Value) -> Self {
         let mut adj_list = HashMap::new();
-        let mut stack = vec![(doc, ROOT_PATH.to_string())];
+        let mut stack = vec![(doc, ROOT_PATH.to_owned())];
 
         let mut seen = HashSet::<String>::new();
 
@@ -80,7 +88,7 @@ impl DocIndex {
 
         Self {
             adj_list,
-            root: ROOT_PATH.to_string(),
+            root: ROOT_PATH.to_owned(),
         }
     }
 }

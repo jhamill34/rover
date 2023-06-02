@@ -1,3 +1,5 @@
+//!
+
 use std::{
     env,
     fs::{self, File},
@@ -8,6 +10,7 @@ use std::{
 
 use anyhow::anyhow;
 
+///
 pub fn fetch_document(file_name: &str) -> anyhow::Result<serde_json::Value> {
     let doc = fs::read_to_string(file_name)?;
     let doc: serde_json::Value = serde_yaml::from_str(&doc)?;
@@ -15,7 +18,8 @@ pub fn fetch_document(file_name: &str) -> anyhow::Result<serde_json::Value> {
     Ok(doc)
 }
 
-pub fn save_doc(file_name: &str, value: serde_json::Value) -> anyhow::Result<()> {
+///
+pub fn save_doc(file_name: &str, value: &serde_json::Value) -> anyhow::Result<()> {
     let mut path = PathBuf::from(file_name);
 
     let stem = path
@@ -36,7 +40,8 @@ pub fn save_doc(file_name: &str, value: serde_json::Value) -> anyhow::Result<()>
     Ok(())
 }
 
-pub fn editor(value: serde_json::Value) -> anyhow::Result<serde_json::Value> {
+///
+pub fn editor(value: &serde_json::Value) -> anyhow::Result<serde_json::Value> {
     let editor = env::var("EDITOR")?;
     let mut file_path = env::temp_dir();
     file_path.push("editable.json");

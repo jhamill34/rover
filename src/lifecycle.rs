@@ -1,3 +1,5 @@
+//!
+
 use std::io;
 
 use crossterm::{
@@ -9,21 +11,25 @@ use tui::{backend::Backend, layout::Rect, Terminal};
 
 use crate::{state::State, ui};
 
-pub struct ApplicationLifecycle<B>
+///
+pub struct Application<B>
 where
     B: Backend + io::Write,
 {
+    ///
     terminal: Terminal<B>,
 }
 
-impl<B> ApplicationLifecycle<B>
+impl<B> Application<B>
 where
     B: Backend + io::Write,
 {
+    ///
     pub fn new(terminal: Terminal<B>) -> Self {
         Self { terminal }
     }
 
+    ///
     pub fn suspend(&mut self) -> anyhow::Result<()> {
         disable_raw_mode()?;
 
@@ -37,6 +43,7 @@ where
         Ok(())
     }
 
+    ///
     pub fn resume(&mut self) -> anyhow::Result<()> {
         enable_raw_mode()?;
 
@@ -50,12 +57,14 @@ where
         Ok(())
     }
 
+    ///
     pub fn refresh(&mut self, state: &State) -> anyhow::Result<()> {
         self.terminal.draw(|f| ui::ui(f, state))?;
 
         Ok(())
     }
 
+    ///
     pub fn resize(&mut self, width: u16, height: u16) -> anyhow::Result<()> {
         self.terminal.resize(Rect::new(0, 0, width, height))?;
 

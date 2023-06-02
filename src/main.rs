@@ -1,13 +1,31 @@
+#![warn(clippy::restriction, clippy::pedantic)]
+#![allow(
+    clippy::blanket_clippy_restriction_lints,
+    clippy::mod_module_files,
+    clippy::self_named_module_files,
+    clippy::implicit_return,
+    clippy::shadow_reuse,
+    clippy::match_ref_pats,
+    clippy::shadow_unrelated,
+    clippy::shadow_same,
+    // clippy::too_many_lines
+)]
+
+//!
+
+extern crate alloc;
+use alloc::sync::Arc;
+
 use std::{
     env,
-    sync::{Arc, Mutex},
+    sync::Mutex,
 };
 
 use anyhow::anyhow;
 use events::event_listener;
-use lifecycle::ApplicationLifecycle;
+use lifecycle::Application;
 use redux_rs::Store;
-use state::{index::DocIndex, State};
+use state::{index::Doc, State};
 use ui::configure_terminal;
 use util::fetch_document;
 
@@ -28,10 +46,10 @@ async fn main() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow!("Missing filename in argument list."))?;
 
     let doc = fetch_document(file_name)?;
-    let index = DocIndex::build_from(&doc);
+    let index = Doc::build_from(&doc);
 
     let initial_state = State::new(doc, index, file_name.clone());
-    let mut lifecycle = ApplicationLifecycle::new(terminal);
+    let mut lifecycle = Application::new(terminal);
     lifecycle.refresh(&initial_state)?;
 
     let lifecycle = Arc::new(Mutex::new(lifecycle));
