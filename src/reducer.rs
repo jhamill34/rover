@@ -90,8 +90,12 @@ pub fn reducer(mut state: State, action: Action) -> State {
 
                 if let Some(existing) = existing {
                     let index = Doc::build_from(&value);
-                    let root = index.adj_list.get(&index.root).cloned().unwrap_or_default();
-                    state.index.adj_list.insert(path.clone(), root);
+                    for (other_key, other_value) in index.adj_list {
+                        let other_key = other_key.replace('#', path);
+                        let other_value = other_value.iter().map(|child_path| child_path.replace('#', path)).collect();
+                        state.index.adj_list.insert(other_key, other_value);
+                    }
+
                     *existing = value;
                 }
             }
