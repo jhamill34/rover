@@ -1,20 +1,28 @@
 use std::io;
 
-use crossterm::{terminal::{disable_raw_mode, LeaveAlternateScreen, enable_raw_mode, EnterAlternateScreen}, execute, event::{DisableMouseCapture, EnableMouseCapture}};
-use tui::{backend::Backend, Terminal, layout::Rect};
+use crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
+use tui::{backend::Backend, layout::Rect, Terminal};
 
 use crate::{state::State, ui};
 
-pub struct ApplicationLifecycle<B> 
-where B: Backend + io::Write 
+pub struct ApplicationLifecycle<B>
+where
+    B: Backend + io::Write,
 {
-    terminal: Terminal<B>
+    terminal: Terminal<B>,
 }
 
-impl <B> ApplicationLifecycle<B>
-where B: Backend + io::Write 
+impl<B> ApplicationLifecycle<B>
+where
+    B: Backend + io::Write,
 {
-    pub fn new(terminal: Terminal<B>) -> Self { Self { terminal } }
+    pub fn new(terminal: Terminal<B>) -> Self {
+        Self { terminal }
+    }
 
     pub fn suspend(&mut self) -> anyhow::Result<()> {
         disable_raw_mode()?;
@@ -43,9 +51,7 @@ where B: Backend + io::Write
     }
 
     pub fn refresh(&mut self, state: &State) -> anyhow::Result<()> {
-        self.terminal.draw(|f| {
-            ui::ui(f, state)
-        })?;
+        self.terminal.draw(|f| ui::ui(f, state))?;
 
         Ok(())
     }
@@ -56,4 +62,3 @@ where B: Backend + io::Write
         Ok(())
     }
 }
-

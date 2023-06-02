@@ -1,9 +1,20 @@
 use std::io;
 
-use crossterm::{terminal::{enable_raw_mode, EnterAlternateScreen}, execute, event::EnableMouseCapture};
-use tui::{backend::{CrosstermBackend, Backend}, Terminal, Frame, layout::{Direction, Constraint, Layout}, widgets::{Block, Borders, Paragraph, ListItem, List, ListState}, text::{Text, Spans, Span}, style::{Style, Color}};
+use crossterm::{
+    event::EnableMouseCapture,
+    execute,
+    terminal::{enable_raw_mode, EnterAlternateScreen},
+};
+use tui::{
+    backend::{Backend, CrosstermBackend},
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Style},
+    text::{Span, Spans, Text},
+    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
+    Frame, Terminal,
+};
 
-use crate::state::{State, Page};
+use crate::state::{Page, State};
 
 pub fn configure_terminal() -> anyhow::Result<Terminal<CrosstermBackend<io::Stdout>>> {
     enable_raw_mode()?;
@@ -29,31 +40,24 @@ pub fn nav_ui<B: Backend>(frame: &mut Frame<B>, state: &State) {
         .constraints(
             [
                 Constraint::Length(3),
-                Constraint::Length(frame.size().height - 3)
-            ].as_ref()
+                Constraint::Length(frame.size().height - 3),
+            ]
+            .as_ref(),
         )
         .split(frame.size());
 
-    let location = Block::default()
-        .title("Location")
-        .borders(Borders::ALL);
+    let location = Block::default().title("Location").borders(Borders::ALL);
 
     let current_path = state
         .nav_state
         .current
         .options
-        .get(state
-             .nav_state
-             .current
-             .selected
-        )
+        .get(state.nav_state.current.selected)
         .cloned()
         .unwrap_or_default();
-    let location = Paragraph::new(Text::raw(current_path))
-        .block(location);
+    let location = Paragraph::new(Text::raw(current_path)).block(location);
 
     frame.render_widget(location, main_chunks[0]);
-
 
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
@@ -63,14 +67,15 @@ pub fn nav_ui<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 Constraint::Ratio(1, 3),
                 Constraint::Ratio(1, 3),
                 Constraint::Ratio(1, 3),
-            ].as_ref()
+            ]
+            .as_ref(),
         )
         .split(main_chunks[1]);
 
     //
     // Previous Frame
     //
-    
+
     if let Some(prev) = state.nav_state.history.last() {
         let prev_items: Vec<ListItem> = prev
             .options
@@ -85,32 +90,22 @@ pub fn nav_ui<B: Backend>(frame: &mut Frame<B>, state: &State) {
         let mut prev_items_state = ListState::default();
         prev_items_state.select(Some(prev.selected));
 
-        let prev = Block::default()
-            .title("Previous")
-            .borders(Borders::ALL);
+        let prev = Block::default().title("Previous").borders(Borders::ALL);
 
         let prev = List::new(prev_items)
             .block(prev)
-            .highlight_style(
-                Style::default()
-                .bg(Color::White)
-                .fg(Color::Black)
-            );
+            .highlight_style(Style::default().bg(Color::White).fg(Color::Black));
 
         frame.render_stateful_widget(prev, chunks[0], &mut prev_items_state);
     } else {
-        let prev = Block::default()
-            .title("Previous")
-            .borders(Borders::ALL);
+        let prev = Block::default().title("Previous").borders(Borders::ALL);
         frame.render_widget(prev, chunks[0]);
     }
-    
+
     //
     // Current Frame
     //
-    let current = Block::default()
-        .title("Current")
-        .borders(Borders::ALL);
+    let current = Block::default().title("Current").borders(Borders::ALL);
 
     let current_items: Vec<ListItem> = state
         .nav_state
@@ -129,11 +124,7 @@ pub fn nav_ui<B: Backend>(frame: &mut Frame<B>, state: &State) {
 
     let current = List::new(current_items)
         .block(current)
-        .highlight_style(
-            Style::default()
-                .bg(Color::White)
-                .fg(Color::Black)
-        );
+        .highlight_style(Style::default().bg(Color::White).fg(Color::Black));
     frame.render_stateful_widget(current, chunks[1], &mut current_items_state);
 
     //
@@ -143,46 +134,34 @@ pub fn nav_ui<B: Backend>(frame: &mut Frame<B>, state: &State) {
         .nav_state
         .current
         .options
-        .get(state
-             .nav_state
-             .current
-             .selected
-        );
+        .get(state.nav_state.current.selected);
 
     if let Some(selected_path) = selected_path {
-        let selected_path = selected_path.strip_prefix('#')
+        let selected_path = selected_path
+            .strip_prefix('#')
             .and_then(|path| path.parse::<json_pointer::JsonPointer<_, _>>().ok())
             .and_then(|path| path.get(&state.doc).ok())
             .and_then(|value| serde_json::to_string_pretty(value).ok());
         if let Some(selected_path) = selected_path {
-            let text: Vec<Spans> = selected_path.split('\n')
+            let text: Vec<Spans> = selected_path
+                .split('\n')
                 .into_iter()
-                .map(|line| {
-                    Spans::from(Span::from(line))
-                })
-            .collect();
+                .map(|line| Spans::from(Span::from(line)))
+                .collect();
 
-            let next = Block::default()
-                .title("Preview")
-                .borders(Borders::ALL);
+            let next = Block::default().title("Preview").borders(Borders::ALL);
 
-            let next = Paragraph::new(text)
-                .block(next);
+            let next = Paragraph::new(text).block(next);
 
             frame.render_widget(next, chunks[2]);
-
         } else {
-            let next = Block::default()
-                .title("Preview")
-                .borders(Borders::ALL);
+            let next = Block::default().title("Preview").borders(Borders::ALL);
 
             frame.render_widget(next, chunks[2]);
         }
     } else {
         // Selected not found...
-        let next = Block::default()
-            .title("Preview")
-            .borders(Borders::ALL);
+        let next = Block::default().title("Preview").borders(Borders::ALL);
         frame.render_widget(next, chunks[2]);
     }
 }
@@ -194,23 +173,18 @@ fn search_ui<B: Backend>(frame: &mut Frame<B>, state: &State) {
         .constraints(
             [
                 Constraint::Length(3),
-                Constraint::Length(frame.size().height - 3)
-            ].as_ref()
+                Constraint::Length(frame.size().height - 3),
+            ]
+            .as_ref(),
         )
         .split(frame.size());
 
-    let input = Block::default()
-        .title("Input")
-        .borders(Borders::ALL);
+    let input = Block::default().title("Input").borders(Borders::ALL);
 
     let input_text = Text::raw(state.search_state.value.clone());
-    let input_paragraph = Paragraph::new(input_text)
-        .block(input);
+    let input_paragraph = Paragraph::new(input_text).block(input);
     frame.render_widget(input_paragraph, chunks[0]);
-    
-    let results = Block::default()
-        .title("Results")
-        .borders(Borders::ALL);
+
+    let results = Block::default().title("Results").borders(Borders::ALL);
     frame.render_widget(results, chunks[1]);
 }
-

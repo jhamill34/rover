@@ -4,7 +4,7 @@ use json_pointer::JsonPointer;
 
 pub struct DocIndex {
     pub root: String,
-    pub adj_list: HashMap<String, Vec<String>>
+    pub adj_list: HashMap<String, Vec<String>>,
 }
 
 pub const ROOT_PATH: &str = "#";
@@ -31,7 +31,8 @@ impl DocIndex {
 
                         if key == *"$ref" {
                             if let &serde_json::Value::String(ref child) = child {
-                                let ref_node = child.strip_prefix('#')
+                                let ref_node = child
+                                    .strip_prefix('#')
                                     .and_then(|path| path.parse::<JsonPointer<_, _>>().ok())
                                     .and_then(|path| path.get(doc).ok());
                                 if let Some(ref_node) = ref_node {
@@ -44,19 +45,19 @@ impl DocIndex {
                                     break;
                                 }
                             }
-                        } 
+                        }
 
                         let child_path = format!("{path}/{key}");
 
                         if !seen.contains(&child_path) {
                             stack.push((child, child_path.clone()));
                         }
-                        
+
                         children.push(child_path);
                     }
 
                     adj_list.insert(path, children);
-                },
+                }
                 serde_json::Value::Array(ref value) => {
                     let mut children = vec![];
                     for (index, child) in value.iter().enumerate() {
@@ -70,15 +71,16 @@ impl DocIndex {
                     }
 
                     adj_list.insert(path, children);
-                },
+                }
                 _ => {
                     adj_list.insert(path, vec![]);
                 }
             }
-
         }
 
-        Self { adj_list, root: ROOT_PATH.to_string() }
+        Self {
+            adj_list,
+            root: ROOT_PATH.to_string(),
+        }
     }
 }
-

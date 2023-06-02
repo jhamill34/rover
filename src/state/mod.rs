@@ -18,15 +18,15 @@ impl State {
             doc,
             index,
             current_page: Page::Nav,
-            nav_state: NavState { 
+            nav_state: NavState {
                 current: Step {
                     selected: 0,
                     options: vec![ROOT_PATH.to_string()],
                 },
                 history: vec![],
             },
-            search_state: SearchState { 
-                value: String::new() 
+            search_state: SearchState {
+                value: String::new(),
             },
         }
     }
@@ -43,7 +43,7 @@ pub struct NavState {
 }
 
 pub struct SearchState {
-    pub value: String
+    pub value: String,
 }
 
 #[derive(Clone, Copy)]
@@ -51,4 +51,3 @@ pub enum Page {
     Nav,
     Search,
 }
-
