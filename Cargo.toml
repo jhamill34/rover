@@ -1,0 +1,23 @@
+[package]
+name = "rover"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde_yaml = "0.9"
+serde_json = { version = "1.0", features = [ "preserve_order" ] }
+json-pointer = "0.3"
+
+generational-arena = "0.2"
+
+tui = "0.19"
+crossterm = "0.26"
+
+redux-rs = { version = "0.3", features = ["middleware_thunk"] }
+async-trait = "0.1"
+tokio = { version = "1.0", features = ["full"] }
+
+anyhow = "1.0"
+
