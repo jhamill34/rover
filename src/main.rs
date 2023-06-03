@@ -36,6 +36,7 @@ mod reducer;
 mod state;
 mod ui;
 mod util;
+mod search;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -1,10 +1,12 @@
+#![allow(clippy::too_many_lines)]
+
 //!
 
 use json_pointer::JsonPointer;
 
 use crate::{
     action::Action,
-    state::{index::Doc, Search, State, Step},
+    state::{index::Doc, Search, State, Step, self}, search::filter,
 };
 
 ///
@@ -72,10 +74,80 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state.nav_state.current.selected = option_count - 1;
             state
         }
-        Action::SearchSetValue { value } => State {
-            search_state: Search { value },
-            ..state
-        },
+        Action::NavGoto { path } => {
+            let parts: Vec<_> = path.split('/').collect(); 
+            
+            let mut history = vec![];
+            let mut current = Step {
+                options: vec![state::index::ROOT_PATH.to_owned()],
+                selected: 0,
+            };
+            let mut current_path = String::new();
+
+            for part in parts {
+                if !current_path.is_empty() {
+                    current_path.push('/');
+                }
+                current_path.push_str(part);
+
+                // Fake Move Up/Down
+                current.selected = current.options
+                    .iter()
+                    .position(|opt| *opt == current_path)
+                    .unwrap_or_default();
+
+                // Fake Select Step
+                let next_options = state.index.adj_list
+                    .get(&current_path)
+                    .cloned()
+                    .unwrap_or_default();
+
+                if next_options.is_empty() {
+                    break;
+                }
+
+                let mut next_step = Step {
+                    selected: 0,
+                    options: next_options,
+                };
+
+                core::mem::swap(&mut current, &mut next_step);
+
+                history.push(next_step);
+            }
+
+            state.nav_state.current = current;
+            state.nav_state.history = history;
+
+            state
+        }
+        Action::SearchSetValue { value } => {
+            // TODO: Use FZF on path and value algorithm
+            let filtered_list: Vec<_> = filter(&state.doc, &state.index.adj_list, &value);
+            state.search_state.filtered_paths = filtered_list;
+            state.search_state.value = value;
+
+            state
+        }
+        Action::SearchUp => {
+            let filtered_count = state.search_state.filtered_paths.len();
+            let new_selected = if state.search_state.selected > 0 {
+                state.search_state.selected - 1
+            } else {
+                filtered_count - 1
+            };
+
+            state.search_state.selected = new_selected;
+
+            state
+        }
+        Action::SearchDown => {
+            let filtered_count = state.search_state.filtered_paths.len();
+            let new_selected = (state.search_state.selected + 1) % filtered_count;
+            state.search_state.selected = new_selected;
+
+            state
+        }
         Action::DocumentReplaceCurrent { value } => {
             if let Some(path) = state
                 .nav_state

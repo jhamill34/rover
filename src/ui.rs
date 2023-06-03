@@ -193,6 +193,42 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
     let input_paragraph = Paragraph::new(input_text).block(input);
     frame.render_widget(input_paragraph, chunks[0]);
 
-    let results = Block::default().title("Results").borders(Borders::ALL);
-    frame.render_widget(results, chunks[1]);
+    let result_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .margin(1)
+        .constraints(
+            [
+                Constraint::Ratio(1, 2),
+                Constraint::Ratio(1, 2),
+            ].as_ref()
+        )
+        .split(chunks[1]);
+
+    let filtered_items: Vec<ListItem> = state
+        .search_state
+        .filtered_paths
+        .iter()
+        .map(|path| {
+            ListItem::new(Text::raw(path))
+        })
+        .collect();
+
+    let title = format!("Paths ({}/{})", filtered_items.len(), state.index.adj_list.len());
+    let search_paths = Block::default().title(title).borders(Borders::ALL);
+    let search_paths = List::new(filtered_items)
+        .highlight_symbol("> ")
+        .highlight_style(
+            Style::default()
+                .fg(Color::Black)
+                .bg(Color::White)
+        )
+        .block(search_paths);
+
+    let mut search_paths_selected = ListState::default();
+    search_paths_selected.select(Some(state.search_state.selected));
+
+    frame.render_stateful_widget(search_paths, result_chunks[0], &mut search_paths_selected);
+    
+    let search_preview = Block::default().title("Preview").borders(Borders::ALL);
+    frame.render_widget(search_preview, result_chunks[1]);
 }

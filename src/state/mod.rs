@@ -42,6 +42,8 @@ impl State {
             },
             search_state: Search {
                 value: String::new(),
+                filtered_paths: vec![],
+                selected: 0,
             },
         }
     }
@@ -69,6 +71,12 @@ pub struct Nav {
 pub struct Search {
     ///
     pub value: String,
+
+    ///
+    pub filtered_paths: Vec<String>,
+
+    ///
+    pub selected: usize,
 }
 
 ///

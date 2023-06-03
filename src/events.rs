@@ -193,14 +193,31 @@ where
                                 code: KeyCode::Enter,
                                 ..
                             } => {
-                                store
-                                    .dispatch(Action::SearchSetValue {
-                                        value: String::new(),
-                                    })
-                                    .await;
+                                let selected_path = store.select(|state: &State| {
+                                    state.search_state.filtered_paths.get(state.search_state.selected).cloned()
+                                }).await;
+
+                                if let Some(selected_path) = selected_path {
+                                    store.dispatch(Action::NavGoto { path: selected_path }).await;
+                                }
+
                                 store
                                     .dispatch(Action::SetCurrentPage { page: Page::Nav })
                                     .await;
+                            }
+                            KeyEvent {
+                                code: KeyCode::Char('n'),
+                                modifiers: KeyModifiers::CONTROL,
+                                ..
+                            } => {
+                                store.dispatch(Action::SearchDown).await;
+                            }
+                            KeyEvent {
+                                code: KeyCode::Char('p'),
+                                modifiers: KeyModifiers::CONTROL,
+                                ..
+                            } => {
+                                store.dispatch(Action::SearchUp).await;
                             }
                             KeyEvent {
                                 code: KeyCode::Esc, ..

@@ -27,6 +27,12 @@ pub enum Action {
     NavTop,
 
     ///
+    NavGoto { 
+        ///
+        path: String 
+    },
+
+    ///
     NavBottom,
 
     ///
@@ -35,6 +41,12 @@ pub enum Action {
         value: serde_json::Value 
     },
     
+    ///
+    SearchUp,
+
+    ///
+    SearchDown,
+
     ///
     SearchSetValue { 
         ///
