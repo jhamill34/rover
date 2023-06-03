@@ -229,6 +229,39 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
 
     frame.render_stateful_widget(search_paths, result_chunks[0], &mut search_paths_selected);
     
-    let search_preview = Block::default().title("Preview").borders(Borders::ALL);
-    frame.render_widget(search_preview, result_chunks[1]);
+    let selected_path = state
+        .search_state
+        .filtered_paths
+        .get(
+            state.search_state.selected
+        );
+
+    if let Some(selected_path) = selected_path {
+        let selected_path = selected_path
+            .strip_prefix('#')
+            .and_then(|path| path.parse::<json_pointer::JsonPointer<_, _>>().ok())
+            .and_then(|path| path.get(&state.doc).ok())
+            .and_then(|value| serde_json::to_string_pretty(value).ok());
+        if let Some(selected_path) = selected_path {
+            let text: Vec<Spans> = selected_path
+                .split('\n')
+                .into_iter()
+                .map(|line| Spans::from(Span::from(line)))
+                .collect();
+
+            let preview = Block::default().title("Preview").borders(Borders::ALL);
+
+            let preview = Paragraph::new(text).block(preview);
+
+            frame.render_widget(preview, result_chunks[1]);
+        } else {
+            let next = Block::default().title("Preview").borders(Borders::ALL);
+
+            frame.render_widget(next, result_chunks[1]);
+        }
+    } else {
+        // Selected not found...
+        let next = Block::default().title("Preview").borders(Borders::ALL);
+        frame.render_widget(next, result_chunks[1]);
+    }
 }
