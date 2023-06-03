@@ -44,14 +44,14 @@ pub fn save_doc(file_name: &str, value: &serde_json::Value) -> anyhow::Result<()
 pub fn editor(value: &serde_json::Value) -> anyhow::Result<serde_json::Value> {
     let editor = env::var("EDITOR")?;
     let mut file_path = env::temp_dir();
-    file_path.push("editable.json");
+    file_path.push("editable.yaml");
     let mut new_file = File::create(&file_path)?;
-    new_file.write_all(serde_json::to_string_pretty(&value)?.as_bytes())?;
+    new_file.write_all(serde_yaml::to_string(&value)?.as_bytes())?;
 
     Command::new(editor).arg(&file_path).status()?;
 
     let new_value = fs::read_to_string(&file_path)?;
-    let result = serde_json::from_str(&new_value)?;
+    let result = serde_yaml::from_str(&new_value)?;
 
     Ok(result)
 }

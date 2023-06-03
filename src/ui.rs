@@ -148,7 +148,7 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
             .strip_prefix('#')
             .and_then(|path| path.parse::<json_pointer::JsonPointer<_, _>>().ok())
             .and_then(|path| path.get(&state.doc).ok())
-            .and_then(|value| serde_json::to_string_pretty(value).ok());
+            .and_then(|value| serde_yaml::to_string(value).ok());
         if let Some(selected_path) = selected_path {
             let text: Vec<Spans> = selected_path
                 .split('\n')
@@ -254,7 +254,7 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
             .strip_prefix('#')
             .and_then(|path| path.parse::<json_pointer::JsonPointer<_, _>>().ok())
             .and_then(|path| path.get(&state.doc).ok())
-            .and_then(|value| serde_json::to_string_pretty(value).ok());
+            .and_then(|value| serde_yaml::to_string(value).ok());
         if let Some(selected_path) = selected_path {
             let text: Vec<Spans> = selected_path
                 .split('\n')
