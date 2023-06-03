@@ -181,17 +181,30 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
         .constraints(
             [
                 Constraint::Length(3),
+                Constraint::Length(3),
                 Constraint::Length(frame.size().height - 3),
             ]
             .as_ref(),
         )
         .split(frame.size());
 
+    let selected_path = state
+        .search_state
+        .filtered_paths
+        .get(
+            state.search_state.selected
+        );
+
     let input = Block::default().title("Input").borders(Borders::ALL);
 
     let input_text = Text::raw(state.search_state.value.clone());
     let input_paragraph = Paragraph::new(input_text).block(input);
     frame.render_widget(input_paragraph, chunks[0]);
+    
+    let current_path = Block::default().borders(Borders::ALL);
+    let current_path = Paragraph::new(Text::raw(selected_path.cloned().unwrap_or_default()))
+        .block(current_path);
+    frame.render_widget(current_path, chunks[1]);
 
     let result_chunks = Layout::default()
         .direction(Direction::Horizontal)
@@ -202,7 +215,7 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 Constraint::Ratio(1, 2),
             ].as_ref()
         )
-        .split(chunks[1]);
+        .split(chunks[2]);
 
     let filtered_items: Vec<ListItem> = state
         .search_state

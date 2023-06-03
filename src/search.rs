@@ -106,6 +106,8 @@ pub fn filter(
     graph: &HashMap<String, Vec<String>>, 
     value: &str
 ) -> Vec<String> {
+    // TODO: Handle incremental search with caching and prefix/postifx tree
+    // TODO: Handle special syntax for exact and negate search
     let mut opt = OPT.lock().unwrap();
     let criteria = ScoringCriteria::default();
     

@@ -6,7 +6,7 @@ use json_pointer::JsonPointer;
 
 use crate::{
     action::Action,
-    state::{index::Doc, Search, State, Step, self}, search::filter,
+    state::{index::Doc, State, Step, self}, search::filter,
 };
 
 ///
@@ -122,7 +122,6 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::SearchSetValue { value } => {
-            // TODO: Use FZF on path and value algorithm
             let filtered_list: Vec<_> = filter(&state.doc, &state.index.adj_list, &value);
             state.search_state.filtered_paths = filtered_list;
             state.search_state.value = value;
