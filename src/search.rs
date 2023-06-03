@@ -4,6 +4,7 @@
 
 use std::{collections::HashMap, cmp, sync::Mutex};
 
+use json_pointer::JsonPointer;
 use lazy_static::lazy_static;
 
 lazy_static!{ 
@@ -101,20 +102,32 @@ fn score(target: &str, query: &str, criteria: &ScoringCriteria, opt: &mut [i16])
 
 ///
 pub fn filter(
-    _doc: &serde_json::Value, 
+    doc: &serde_json::Value, 
     graph: &HashMap<String, Vec<String>>, 
     value: &str
 ) -> Vec<String> {
     let mut opt = OPT.lock().unwrap();
+    let criteria = ScoringCriteria::default();
     
-    let mut scores: Vec<(String, i16)> = graph.keys()
-        .filter_map(|key| {
-            let key_score = score(key, value, &ScoringCriteria::default(), &mut opt);
+    let mut scores: Vec<(String, i16)> = graph.iter()
+        .filter_map(|(key, children)| {
+            let mut key_score = score(key, value, &criteria, &mut opt);
+            
+            if children.is_empty() {
+                let raw = key.parse::<JsonPointer<_, _>>().ok()
+                    .and_then(|path| path.get(doc).ok())
+                    .and_then(|node| serde_json::to_string_pretty(&node).ok());
+
+                if let Some(raw) = raw {
+                    key_score = cmp::max(score(&raw, value, &criteria, &mut opt), key_score);
+                }
+            }
+            
             (key_score > 0).then(|| (key.to_string(), key_score))
         })
         .collect();
 
-    scores.sort_by(|a, b| a.1.cmp(&b.1));
+    scores.sort_by(|a, b| b.1.cmp(&a.1));
 
     scores.into_iter().map(|(key, _)| key).collect()
 }
@@ -122,8 +135,7 @@ pub fn filter(
 #[cfg(test)]
 mod test {
     use super::*;
-
-    
+ 
     #[test]
     fn test_missing_chars_invalid() {
         let opt = &mut [0_i16; 50];
