@@ -52,4 +52,16 @@ pub enum Action {
         ///
         value: String 
     },
+
+    ///
+    ImportPromptSetValue { 
+        ///
+        value: String 
+    },
+
+    ///
+    ExportPromptSetValue { 
+        ///
+        value: String 
+    },
 }

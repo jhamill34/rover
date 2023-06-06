@@ -23,6 +23,13 @@ pub struct State {
 
     ///
     pub search_state: Search,
+
+    ///
+    pub import_prompt_state: ImportPrompt,
+
+    ///
+    pub export_prompt_state: ExportPrompt,
+
 }
 
 impl State {
@@ -44,6 +51,12 @@ impl State {
                 value: String::new(),
                 filtered_paths: vec![],
                 selected: 0,
+            },
+            import_prompt_state: ImportPrompt {
+                value: String::new(),
+            },
+            export_prompt_state: ExportPrompt {
+                value: String::new(),
             },
         }
     }
@@ -80,6 +93,17 @@ pub struct Search {
 }
 
 ///
+pub struct ImportPrompt {
+    ///
+    pub value: String,
+}
+
+pub struct ExportPrompt {
+    ///
+    pub value: String,
+}
+
+///
 #[derive(Clone, Copy)]
 pub enum Page {
     ///
@@ -87,4 +111,11 @@ pub enum Page {
 
     ///
     Search,
+
+    ///
+    ImportPrompt,
+
+    ///
+    ExportPrompt,
 }
+

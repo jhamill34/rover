@@ -182,5 +182,13 @@ pub fn reducer(mut state: State, action: Action) -> State {
 
             state
         }
+        Action::ImportPromptSetValue { value } => {
+            state.import_prompt_state.value = value;
+            state
+        },
+        Action::ExportPromptSetValue { value } => {
+            state.export_prompt_state.value = value;
+            state
+        },
     }
 }

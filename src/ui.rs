@@ -36,6 +36,108 @@ pub fn ui<B: Backend>(frame: &mut Frame<B>, state: &State) {
     match state.current_page {
         Page::Nav => nav(frame, state),
         Page::Search => search(frame, state),
+        Page::ImportPrompt => import_prompt(frame, state),
+        Page::ExportPrompt => export_prompt(frame, state),
+    }
+}
+
+///
+pub fn import_prompt<B: Backend>(frame: &mut Frame<B>, state: &State) {
+    let horizontal = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Ratio(1, 4),
+                Constraint::Ratio(2, 4),
+                Constraint::Ratio(1, 4),
+            ].as_ref()
+        )
+        .split(frame.size());
+
+    if let Some(column) = horizontal.get(1) {
+        let vertical_margin = column.height.saturating_sub(4).saturating_div(2);
+
+        let vertical = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Length(vertical_margin),
+                    Constraint::Length(4),
+                    Constraint::Length(vertical_margin),
+                ].as_ref()
+            )
+            .split(*column);
+
+        if let Some(row) = vertical.get(1) {
+            let prompt = Block::default()
+                .title("Import")
+                .borders(Borders::ALL);
+
+            let text = Paragraph::new(Text::from(vec![
+                Spans::from(Span::styled(
+                    "  Select the file path to import into the current document:",
+                    Style::default().add_modifier(Modifier::BOLD).fg(Color::White),
+                )),
+                Spans::from(Span::styled(
+                    format!(" > {}", state.import_prompt_state.value),
+                    Style::default()
+                        .fg(Color::White),
+                )),
+            ])).block(prompt);
+
+
+            frame.render_widget(text, *row);
+        }
+    }
+}
+
+///
+pub fn export_prompt<B: Backend>(frame: &mut Frame<B>, state: &State) {
+    let horizontal = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Ratio(1, 4),
+                Constraint::Ratio(2, 4),
+                Constraint::Ratio(1, 4),
+            ].as_ref()
+        )
+        .split(frame.size());
+
+    if let Some(column) = horizontal.get(1) {
+        let vertical_margin = column.height.saturating_sub(4).saturating_div(2);
+
+        let vertical = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Length(vertical_margin),
+                    Constraint::Length(4),
+                    Constraint::Length(vertical_margin),
+                ].as_ref()
+            )
+            .split(*column);
+
+        if let Some(row) = vertical.get(1) {
+            let prompt = Block::default()
+                .title("Export")
+                .borders(Borders::ALL);
+
+            let text = Paragraph::new(Text::from(vec![
+                Spans::from(Span::styled(
+                    "  Select the file path to export the current document to:",
+                    Style::default().add_modifier(Modifier::BOLD).fg(Color::White),
+                )),
+                Spans::from(Span::styled(
+                    format!(" > {}", state.export_prompt_state.value),
+                    Style::default()
+                        .fg(Color::White),
+                )),
+            ])).block(prompt);
+
+
+            frame.render_widget(text, *row);
+        }
     }
 }
 
