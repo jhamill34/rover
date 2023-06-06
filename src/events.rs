@@ -129,7 +129,8 @@ where
                                     })
                                     .await;
 
-                                let new_value = editor(&existing_value)?;
+                                let file_name = store.select(|state: &State| state.file_name.clone()).await;
+                                let new_value = editor(&existing_value, &file_name)?;
 
                                 {
                                     let mut lifecycle = lifecycle.lock().map_err(|e| anyhow!("Unable to get lifecycle lock: {e}"))?;
@@ -209,7 +210,8 @@ where
                                 let existing_value = fs::read_to_string(&current_path)?;
                                 let existing_value = serde_yaml::from_str(&existing_value)?;
 
-                                let new_value = editor(&existing_value)?;
+                                let file_name = store.select(|state: &State| state.file_name.clone()).await;
+                                let new_value = editor(&existing_value, &file_name)?;
 
                                 {
                                     let mut lifecycle = lifecycle.lock().map_err(|e| anyhow!("Unable to get lifecycle lock: {e}"))?;
