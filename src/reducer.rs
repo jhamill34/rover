@@ -47,12 +47,12 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::NavUp => {
-            let option_count = state.nav_state.current.options.len();
-            let new_selected = if state.nav_state.current.selected > 0 {
-                state.nav_state.current.selected - 1
-            } else {
-                option_count - 1
-            };
+            let option_count = state.nav_state.current.options
+                .len()
+                .saturating_sub(1);
+            let new_selected = state.nav_state.current.selected
+                .checked_sub(1)
+                .unwrap_or(option_count);
 
             state.nav_state.current.selected = new_selected;
 
@@ -60,7 +60,11 @@ pub fn reducer(mut state: State, action: Action) -> State {
         }
         Action::NavDown => {
             let option_count = state.nav_state.current.options.len();
-            let new_selected = (state.nav_state.current.selected + 1) % option_count;
+            let new_selected = state.nav_state.current.selected
+                .wrapping_add(1)
+                .checked_rem_euclid(option_count)
+                .unwrap_or_default();
+
             state.nav_state.current.selected = new_selected;
 
             state
@@ -71,7 +75,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
         }
         Action::NavBottom => {
             let option_count = state.nav_state.current.options.len();
-            state.nav_state.current.selected = option_count - 1;
+            state.nav_state.current.selected = option_count.saturating_sub(1);
             state
         }
         Action::NavGoto { path } => {
@@ -129,12 +133,13 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::SearchUp => {
-            let filtered_count = state.search_state.filtered_paths.len();
-            let new_selected = if state.search_state.selected > 0 {
-                state.search_state.selected - 1
-            } else {
-                filtered_count - 1
-            };
+            let filtered_count = state.search_state.filtered_paths
+                .len()
+                .saturating_sub(1);
+
+            let new_selected = state.search_state.selected
+                .checked_sub(1)
+                .unwrap_or(filtered_count);
 
             state.search_state.selected = new_selected;
 
@@ -142,7 +147,11 @@ pub fn reducer(mut state: State, action: Action) -> State {
         }
         Action::SearchDown => {
             let filtered_count = state.search_state.filtered_paths.len();
-            let new_selected = (state.search_state.selected + 1) % filtered_count;
+            let new_selected = state.search_state.selected
+                .wrapping_add(1)
+                .checked_rem_euclid(filtered_count)
+                .unwrap_or_default();
+
             state.search_state.selected = new_selected;
 
             state

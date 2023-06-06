@@ -2,7 +2,9 @@
 
 //!
 
-use std::{collections::HashMap, cmp, sync::Mutex};
+use core::cmp;
+
+use std::{collections::HashMap, sync::Mutex};
 
 use json_pointer::JsonPointer;
 use lazy_static::lazy_static;

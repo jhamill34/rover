@@ -59,8 +59,9 @@ async fn main() -> anyhow::Result<()> {
     let ui_lifecycle = Arc::clone(&lifecycle);
     store
         .subscribe(move |state: &State| {
-            let mut ui_lifecycle = ui_lifecycle.lock().unwrap();
-            ui_lifecycle.refresh(state).unwrap();
+            if let Ok(mut ui_lifecycle) = ui_lifecycle.lock() {
+                ui_lifecycle.refresh(state).ok();
+            }
         })
         .await;
 

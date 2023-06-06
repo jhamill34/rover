@@ -18,7 +18,7 @@ use tui::{
     Frame, Terminal,
 };
 
-use crate::state::{Page, State};
+use crate::state::{Page, State, Step};
 
 ///
 pub fn configure_terminal() -> anyhow::Result<Terminal<CrosstermBackend<io::Stdout>>> {
@@ -41,18 +41,97 @@ pub fn ui<B: Backend>(frame: &mut Frame<B>, state: &State) {
 
 ///
 pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
-    let main_chunks = Layout::default()
+    let mut main_chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
         .constraints(
             [
                 Constraint::Length(3),
-                Constraint::Length(frame.size().height - 3),
+                Constraint::Length(frame.size().height.saturating_sub(3)),
             ]
             .as_ref(),
         )
-        .split(frame.size());
+        .split(frame.size())
+        .into_iter();
 
+    let location = current_path(state);
+
+    if let Some(rect) = main_chunks.next() {
+        frame.render_widget(location, rect);
+    }
+
+    if let Some(rect) = main_chunks.next() {
+        let mut chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .margin(1)
+            .constraints(
+                [
+                Constraint::Ratio(1, 3),
+                Constraint::Ratio(1, 3),
+                Constraint::Ratio(1, 3),
+                ]
+                .as_ref(),
+                )
+            .split(rect)
+            .into_iter();
+
+        if let Some(rect) = chunks.next() {
+            let previous = Block::default().title("Previous").borders(Borders::ALL);
+            if let Some(prev) = state.nav_state.history.last() {
+                let (list, mut state) = step_list(prev, previous);
+                frame.render_stateful_widget(list, rect, &mut state);
+            } else {
+                frame.render_widget(previous, rect);
+            }
+        }
+
+        if let Some(rect) = chunks.next() {
+            let current = Block::default().title("Current").borders(Borders::ALL);
+            let (current, mut current_state) = step_list(&state.nav_state.current, current);
+            frame.render_stateful_widget(current, rect, &mut current_state);
+        }
+
+        if let Some(rect) = chunks.next() {
+            let selected_path = state
+                .nav_state
+                .current
+                .options
+                .get(state.nav_state.current.selected);
+
+            if let Some(selected_path) = selected_path {
+                let selected_path = selected_path
+                    .strip_prefix('#')
+                    .and_then(|path| path.parse::<json_pointer::JsonPointer<_, _>>().ok())
+                    .and_then(|path| path.get(&state.doc).ok())
+                    .and_then(|value| serde_yaml::to_string(value).ok());
+                if let Some(selected_path) = selected_path {
+                    let text: Vec<Spans> = selected_path
+                        .split('\n')
+                        .into_iter()
+                        .map(|line| Spans::from(Span::from(line)))
+                        .collect();
+
+                    let preview = Block::default().title("Preview").borders(Borders::ALL);
+
+                    let preview = Paragraph::new(text).block(preview);
+
+                    frame.render_widget(preview, rect);
+                } else {
+                    let next = Block::default().title("Preview").borders(Borders::ALL);
+
+                    frame.render_widget(next, rect);
+                }
+            } else {
+                // Selected not found...
+                let next = Block::default().title("Preview").borders(Borders::ALL);
+                frame.render_widget(next, rect);
+            }
+        }
+    }
+}
+
+///
+fn current_path<'path>(state: &State) -> Paragraph<'path> {
     let location = Block::default().title("Location").borders(Borders::ALL);
 
     let current_path = state
@@ -62,61 +141,12 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
         .get(state.nav_state.current.selected)
         .cloned()
         .unwrap_or_default();
-    let location = Paragraph::new(Text::raw(current_path)).block(location);
+    Paragraph::new(Text::raw(current_path)).block(location)
+}
 
-    frame.render_widget(location, main_chunks[0]);
-
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .margin(1)
-        .constraints(
-            [
-                Constraint::Ratio(1, 3),
-                Constraint::Ratio(1, 3),
-                Constraint::Ratio(1, 3),
-            ]
-            .as_ref(),
-        )
-        .split(main_chunks[1]);
-
-    //
-    // Previous Frame
-    //
-
-    if let Some(prev) = state.nav_state.history.last() {
-        let prev_items: Vec<ListItem> = prev
-            .options
-            .iter()
-            .filter_map(|opt| {
-                opt.split('/')
-                    .last()
-                    .map(|name| name.replace("~1", "/"))
-                    .map(|name| ListItem::new(Text::raw(name)))
-            })
-            .collect();
-        let mut prev_items_state = ListState::default();
-        prev_items_state.select(Some(prev.selected));
-
-        let prev = Block::default().title("Previous").borders(Borders::ALL);
-
-        let prev = List::new(prev_items)
-            .block(prev)
-            .highlight_style(Style::default().bg(Color::White).fg(Color::Black));
-
-        frame.render_stateful_widget(prev, chunks[0], &mut prev_items_state);
-    } else {
-        let prev = Block::default().title("Previous").borders(Borders::ALL);
-        frame.render_widget(prev, chunks[0]);
-    }
-
-    //
-    // Current Frame
-    //
-    let current = Block::default().title("Current").borders(Borders::ALL);
-
-    let current_items: Vec<ListItem> = state
-        .nav_state
-        .current
+///
+fn step_list<'list>(step: &Step, parent: Block<'list>) -> (List<'list>, ListState) {
+    let prev_items: Vec<ListItem> = step 
         .options
         .iter()
         .filter_map(|opt| {
@@ -125,156 +155,129 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 .map(|name| name.replace("~1", "/"))
                 .map(|name| ListItem::new(Text::raw(name)))
         })
-        .collect();
-    let mut current_items_state = ListState::default();
-    current_items_state.select(Some(state.nav_state.current.selected));
+    .collect();
 
-    let current = List::new(current_items)
-        .block(current)
+    let mut prev_items_state = ListState::default();
+    prev_items_state.select(Some(step.selected));
+
+    let prev = List::new(prev_items)
+        .block(parent)
         .highlight_style(Style::default().bg(Color::White).fg(Color::Black));
-    frame.render_stateful_widget(current, chunks[1], &mut current_items_state);
 
-    //
-    // Next / Preview Frame
-    //
-    let selected_path = state
-        .nav_state
-        .current
-        .options
-        .get(state.nav_state.current.selected);
-
-    if let Some(selected_path) = selected_path {
-        let selected_path = selected_path
-            .strip_prefix('#')
-            .and_then(|path| path.parse::<json_pointer::JsonPointer<_, _>>().ok())
-            .and_then(|path| path.get(&state.doc).ok())
-            .and_then(|value| serde_yaml::to_string(value).ok());
-        if let Some(selected_path) = selected_path {
-            let text: Vec<Spans> = selected_path
-                .split('\n')
-                .into_iter()
-                .map(|line| Spans::from(Span::from(line)))
-                .collect();
-
-            let preview = Block::default().title("Preview").borders(Borders::ALL);
-
-            let preview = Paragraph::new(text).block(preview);
-
-            frame.render_widget(preview, chunks[2]);
-        } else {
-            let next = Block::default().title("Preview").borders(Borders::ALL);
-
-            frame.render_widget(next, chunks[2]);
-        }
-    } else {
-        // Selected not found...
-        let next = Block::default().title("Preview").borders(Borders::ALL);
-        frame.render_widget(next, chunks[2]);
-    }
+    (prev, prev_items_state)
 }
 
 ///
 fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
-    let chunks = Layout::default()
+    let mut chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(1)
         .constraints(
             [
                 Constraint::Length(3),
                 Constraint::Length(3),
-                Constraint::Length(frame.size().height - 3),
+                Constraint::Length(frame.size().height.saturating_sub(3)),
             ]
             .as_ref(),
         )
-        .split(frame.size());
+        .split(frame.size())
+        .into_iter();
 
-    let selected_path = state
-        .search_state
-        .filtered_paths
-        .get(
-            state.search_state.selected
-        );
 
-    let input = Block::default().title("Input").borders(Borders::ALL);
-
-    let input_text = Text::raw(state.search_state.value.clone());
-    let input_paragraph = Paragraph::new(input_text).block(input);
-    frame.render_widget(input_paragraph, chunks[0]);
+    if let Some(rect) = chunks.next() {
+        let input = Block::default().title("Input").borders(Borders::ALL);
+        let input_text = Text::raw(state.search_state.value.clone());
+        let input_paragraph = Paragraph::new(input_text).block(input);
+        frame.render_widget(input_paragraph, rect);
+    }
     
-    let current_path = Block::default().borders(Borders::ALL);
-    let current_path = Paragraph::new(Text::raw(selected_path.cloned().unwrap_or_default()))
-        .block(current_path);
-    frame.render_widget(current_path, chunks[1]);
+    if let Some(rect) = chunks.next() {
+        let selected_path = state
+            .search_state
+            .filtered_paths
+            .get(
+                state.search_state.selected
+                );
+        let current_path = Block::default().borders(Borders::ALL);
+        let current_path = Paragraph::new(Text::raw(selected_path.cloned().unwrap_or_default()))
+            .block(current_path);
+        frame.render_widget(current_path, rect);
+    }
 
-    let result_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .margin(1)
-        .constraints(
-            [
+    if let Some(rect) = chunks.next() {
+        let mut result_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .margin(1)
+            .constraints(
+                [
                 Constraint::Ratio(1, 2),
                 Constraint::Ratio(1, 2),
-            ].as_ref()
-        )
-        .split(chunks[2]);
+                ].as_ref()
+                )
+            .split(rect)
+            .into_iter();
 
-    let filtered_items: Vec<ListItem> = state
-        .search_state
-        .filtered_paths
-        .iter()
-        .map(|path| {
-            ListItem::new(Text::raw(path))
-        })
-        .collect();
+        if let Some(rect) = result_chunks.next() {
+            let filtered_items: Vec<ListItem> = state
+                .search_state
+                .filtered_paths
+                .iter()
+                .map(|path| {
+                    ListItem::new(Text::raw(path))
+                })
+            .collect();
 
-    let title = format!("Paths ({}/{})", filtered_items.len(), state.index.adj_list.len());
-    let search_paths = Block::default().title(title).borders(Borders::ALL);
-    let search_paths = List::new(filtered_items)
-        .highlight_symbol("> ")
-        .highlight_style(
-            Style::default()
-                .fg(Color::Black)
-                .bg(Color::White)
-        )
-        .block(search_paths);
+            let title = format!("Paths ({}/{})", filtered_items.len(), state.index.adj_list.len());
+            let search_paths = Block::default().title(title).borders(Borders::ALL);
+            let search_paths = List::new(filtered_items)
+                .highlight_symbol("> ")
+                .highlight_style(
+                    Style::default()
+                    .fg(Color::Black)
+                    .bg(Color::White)
+                    )
+                .block(search_paths);
 
-    let mut search_paths_selected = ListState::default();
-    search_paths_selected.select(Some(state.search_state.selected));
+            let mut search_paths_selected = ListState::default();
+            search_paths_selected.select(Some(state.search_state.selected));
 
-    frame.render_stateful_widget(search_paths, result_chunks[0], &mut search_paths_selected);
-    
-    let selected_path = state
-        .search_state
-        .filtered_paths
-        .get(
-            state.search_state.selected
-        );
-
-    if let Some(selected_path) = selected_path {
-        let selected_path = selected_path
-            .strip_prefix('#')
-            .and_then(|path| path.parse::<json_pointer::JsonPointer<_, _>>().ok())
-            .and_then(|path| path.get(&state.doc).ok())
-            .and_then(|value| serde_yaml::to_string(value).ok());
-        if let Some(selected_path) = selected_path {
-            let text: Vec<Spans> = selected_path
-                .split('\n')
-                .into_iter()
-                .map(|line| Spans::from(Span::from(line)))
-                .collect();
-
-            let preview = Block::default().title("Preview").borders(Borders::ALL);
-
-            let preview = Paragraph::new(text).block(preview);
-
-            frame.render_widget(preview, result_chunks[1]);
-        } else {
-            let next = Block::default().title("Preview").borders(Borders::ALL);
-
-            frame.render_widget(next, result_chunks[1]);
+            frame.render_stateful_widget(search_paths, rect, &mut search_paths_selected);
         }
-    } else {
-        // Selected not found...
-        let next = Block::default().title("Preview").borders(Borders::ALL);
-        frame.render_widget(next, result_chunks[1]);
+
+        if let Some(rect) = result_chunks.next() {
+            let selected_path = state
+                .search_state
+                .filtered_paths
+                .get(state.search_state.selected);
+
+            if let Some(selected_path) = selected_path {
+                let selected_path = selected_path
+                    .strip_prefix('#')
+                    .and_then(|path| path.parse::<json_pointer::JsonPointer<_, _>>().ok())
+                    .and_then(|path| path.get(&state.doc).ok())
+                    .and_then(|value| serde_yaml::to_string(value).ok());
+                if let Some(selected_path) = selected_path {
+                    let text: Vec<Spans> = selected_path
+                        .split('\n')
+                        .into_iter()
+                        .map(|line| Spans::from(Span::from(line)))
+                        .collect();
+
+                    let preview = Block::default().title("Preview").borders(Borders::ALL);
+
+                    let preview = Paragraph::new(text).block(preview);
+
+                    frame.render_widget(preview, rect);
+                } else {
+                    let next = Block::default().title("Preview").borders(Borders::ALL);
+
+                    frame.render_widget(next, rect);
+                }
+            } else {
+                // Selected not found...
+                let next = Block::default().title("Preview").borders(Borders::ALL);
+                frame.render_widget(next, rect);
+            }
+        }
     }
 }

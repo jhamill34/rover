@@ -80,7 +80,10 @@ impl Doc {
 
                     adj_list.insert(path, children);
                 }
-                _ => {
+                serde_json::Value::Null |
+                serde_json::Value::Bool(_) |
+                serde_json::Value::Number(_) |
+                serde_json::Value::String(_) => {
                     adj_list.insert(path, vec![]);
                 }
             }

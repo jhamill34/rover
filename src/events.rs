@@ -4,6 +4,7 @@
 
 extern crate alloc;
 use alloc::sync::Arc;
+use anyhow::anyhow;
 
 use core::time::Duration;
 
@@ -41,7 +42,7 @@ where
                 let lifecycle = Arc::clone(&lifecycle);
                 store
                     .select(move |state: &State| -> anyhow::Result<()> {
-                        let mut lifecycle = lifecycle.lock().unwrap();
+                        let mut lifecycle = lifecycle.lock().map_err(|e| anyhow!("Unable to get lifecycle lock: {e}"))?;
                         lifecycle.resize(width, height)?;
                         lifecycle.refresh(state)?;
                         Ok(())
@@ -92,7 +93,7 @@ where
                                 ..
                             } => {
                                 {
-                                    let mut lifecycle = lifecycle.lock().unwrap();
+                                    let mut lifecycle = lifecycle.lock().map_err(|e| anyhow!("Unable to get lifecycle lock: {e}"))?;
                                     lifecycle.suspend()?;
                                 }
 
@@ -114,7 +115,7 @@ where
                                 let new_value = editor(&existing_value)?;
 
                                 {
-                                    let mut lifecycle = lifecycle.lock().unwrap();
+                                    let mut lifecycle = lifecycle.lock().map_err(|e| anyhow!("Unable to get lifecycle lock: {e}"))?;
                                     lifecycle.resume()?;
                                 }
 
