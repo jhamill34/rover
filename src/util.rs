@@ -74,7 +74,7 @@ pub fn editor(value: &serde_json::Value, file_path: &str) -> anyhow::Result<serd
         .ok_or_else(|| anyhow!("File Extension not found"))?
         .to_string_lossy();
 
-    let mut new_file = File::create(&file_path)?;
+    let mut new_file = File::create(&temp_file_path)?;
 
     match extension.as_ref() {
         "yaml" | "yml" => {
@@ -86,9 +86,9 @@ pub fn editor(value: &serde_json::Value, file_path: &str) -> anyhow::Result<serd
         _ => bail!("File Extension not supported"),
     }
 
-    Command::new(editor).arg(&file_path).status()?;
+    Command::new(editor).arg(&temp_file_path).status()?;
 
-    let new_value = fs::read_to_string(&file_path)?;
+    let new_value = fs::read_to_string(&temp_file_path)?;
 
     match extension.as_ref() {
         "yaml" | "yml" => {
