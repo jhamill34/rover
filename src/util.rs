@@ -42,15 +42,21 @@ pub fn save_doc(file_name: &str, value: &serde_json::Value) -> anyhow::Result<()
         .file_stem()
         .ok_or_else(|| anyhow!("File Stem not found"))?
         .to_string_lossy();
+
     let extention = path
         .extension()
         .ok_or_else(|| anyhow!("File Extension not found"))?
         .to_string_lossy();
+
+    let data = match extention.as_ref() {
+        "yaml" | "yml" => serde_yaml::to_string(&value)?,
+        "json" => serde_json::to_string(&value)?,
+        _ => bail!("File Extension not supported"),
+    };
+
     path.set_file_name(format!("new_{stem}.{extention}"));
 
     let mut save_file = File::create(&path)?;
-
-    let data = serde_yaml::to_string(&value)?;
     save_file.write_all(data.as_bytes())?;
 
     Ok(())
