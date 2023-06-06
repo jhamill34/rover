@@ -8,6 +8,7 @@
     clippy::match_ref_pats,
     clippy::shadow_unrelated,
     clippy::shadow_same,
+    clippy::print_stdout,
     // clippy::too_many_lines
 )]
 
@@ -40,7 +41,6 @@ mod search;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let terminal = configure_terminal()?;
     let args: Vec<_> = env::args().collect();
     let file_name = args
         .get(1)
@@ -48,8 +48,12 @@ async fn main() -> anyhow::Result<()> {
 
     let doc = fetch_document(file_name)?;
     let index = Doc::build_from(&doc);
-
     let initial_state = State::new(doc, index, file_name.clone());
+
+    // 
+    //  !!!PANICS beyond this point will ruin the terminal state!!!
+    //
+    let terminal = configure_terminal()?;
     let mut lifecycle = Application::new(terminal);
     lifecycle.refresh(&initial_state)?;
 
@@ -67,7 +71,11 @@ async fn main() -> anyhow::Result<()> {
 
     let result = tokio::spawn(event_listener(store, Arc::clone(&lifecycle))).await?;
 
-    let mut lifecycle = lifecycle.lock().unwrap();
+    // At this point we just really want to fix the terminal if we can 
+    let mut lifecycle = match lifecycle.lock() {
+        Ok(lock) => lock,
+        Err(err) => err.into_inner()
+    };
     lifecycle.suspend()?;
 
     if let Err(err) = result {
@@ -76,3 +84,4 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
+

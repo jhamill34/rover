@@ -12,7 +12,7 @@ use crossterm::{
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
-    style::{Color, Style},
+    style::{Color, Style, Modifier},
     text::{Span, Spans, Text},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     Frame, Terminal,
@@ -162,7 +162,12 @@ fn step_list<'list>(step: &Step, parent: Block<'list>) -> (List<'list>, ListStat
 
     let prev = List::new(prev_items)
         .block(parent)
-        .highlight_style(Style::default().bg(Color::White).fg(Color::Black));
+        .highlight_symbol(" > ")
+        .highlight_style(
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                // .bg(Color::White)
+                .fg(Color::Yellow));
 
     (prev, prev_items_state)
 }
@@ -233,9 +238,9 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 .highlight_symbol("> ")
                 .highlight_style(
                     Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::White)
-                    )
+                        // .bg(Color::White)
+                        .add_modifier(Modifier::BOLD)
+                        .fg(Color::Yellow))
                 .block(search_paths);
 
             let mut search_paths_selected = ListState::default();

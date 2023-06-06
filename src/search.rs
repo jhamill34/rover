@@ -1,4 +1,8 @@
-#![allow(clippy::separated_literal_suffix)]
+#![allow(
+    clippy::separated_literal_suffix,
+    clippy::integer_arithmetic,
+    clippy::arithmetic_side_effects,
+)]
 
 //!
 
@@ -40,8 +44,10 @@ impl Default for ScoringCriteria {
 fn validate(target: &[char], query: &[char]) -> bool {
     let mut query_ptr = 0;
     for ch in target {
-        if query_ptr < query.len() && (*ch).to_ascii_lowercase() == query[query_ptr].to_ascii_lowercase() {
-            query_ptr += 1;
+        if let Some(query_ch) = query.get(query_ptr) {
+            if (*ch).to_ascii_lowercase() == query_ch.to_ascii_lowercase() {
+                query_ptr = query_ptr.saturating_add(1);
+            }
         }
     }
 
@@ -53,8 +59,13 @@ fn score(target: &str, query: &str, criteria: &ScoringCriteria, opt: &mut [i16])
     let target: Vec<char> = target.chars().collect();
     let query: Vec<char> = query.chars().collect();
 
-    let width = target.len() + 1;
-    let height = query.len() + 1;
+    let Some(width) = target.len().checked_add(1) else {
+        return 0_i16;
+    };
+
+    let Some(height) = query.len().checked_add(1) else {
+        return 0_i16;
+    };
 
     if !validate(&target, &query) {
         return 0_i16;
@@ -68,11 +79,18 @@ fn score(target: &str, query: &str, criteria: &ScoringCriteria, opt: &mut [i16])
     let mut max_score = 0_i16;
     for row in 1..height {
         let mut in_gap = false;
-        opt[row * width] = 0_i16;
+        let Some(start) = opt.get_mut(row * width) else {
+            return 0_i16;
+        };
+        *start = 0_i16;
 
         for col in 1..width {
-            let left = opt[row * width + col - 1];
-            let diag = opt[(row - 1) * width + col - 1];
+            let Some(left) = opt.get(row * width + col - 1) else {
+                return 0_i16;
+            };
+            let Some(diag) = opt.get((row - 1) * width + col - 1) else {
+                return 0_i16;
+            };
 
             let gap_score = if in_gap {
                 cmp::max(left + criteria.target_gap_extend, 0)
@@ -80,8 +98,13 @@ fn score(target: &str, query: &str, criteria: &ScoringCriteria, opt: &mut [i16])
                 cmp::max(left + criteria.target_gap, 0)
             };
 
-            let target_ch = target[col - 1].to_ascii_lowercase();
-            let query_ch = query[row - 1].to_ascii_lowercase();
+            let Some(target_ch) = target.get(col - 1).map(char::to_ascii_lowercase) else {
+                return 0_i16;
+            };
+            let Some(query_ch) = query.get(row - 1).map(char::to_ascii_lowercase) else {
+                return 0_i16;
+            };
+
             let match_score = if target_ch == query_ch {
                 diag + criteria.eq
             } else {
@@ -91,7 +114,11 @@ fn score(target: &str, query: &str, criteria: &ScoringCriteria, opt: &mut [i16])
             in_gap = match_score < gap_score;
 
             let score = cmp::max(match_score, gap_score);
-            opt[row * width + col] = score;
+            let Some(score_location) = opt.get_mut(row * width + col) else {
+                return 0_i16;
+            };
+            *score_location = score;
+
 
             if (height - 1) == row && score > max_score {
                 max_score = score;
@@ -110,30 +137,33 @@ pub fn filter(
 ) -> Vec<String> {
     // TODO: Handle incremental search with caching and prefix/postifx tree
     // TODO: Handle special syntax for exact and negate search
-    let mut opt = OPT.lock().unwrap();
-    let criteria = ScoringCriteria::default();
-    
-    let mut scores: Vec<(String, i16)> = graph.iter()
-        .filter_map(|(key, children)| {
-            let mut key_score = score(key, value, &criteria, &mut opt);
-            
-            if children.is_empty() {
-                let raw = key.parse::<JsonPointer<_, _>>().ok()
-                    .and_then(|path| path.get(doc).ok())
-                    .and_then(|node| serde_json::to_string_pretty(&node).ok());
+    if let Ok(mut opt) = OPT.lock() {
+        let criteria = ScoringCriteria::default();
 
-                if let Some(raw) = raw {
-                    key_score = cmp::max(score(&raw, value, &criteria, &mut opt), key_score);
+        let mut scores: Vec<(String, i16)> = graph.iter()
+            .filter_map(|(key, children)| {
+                let mut key_score = score(key, value, &criteria, &mut opt);
+
+                if children.is_empty() {
+                    let raw = key.parse::<JsonPointer<_, _>>().ok()
+                        .and_then(|path| path.get(doc).ok())
+                        .and_then(|node| serde_json::to_string_pretty(&node).ok());
+
+                    if let Some(raw) = raw {
+                        key_score = cmp::max(score(&raw, value, &criteria, &mut opt), key_score);
+                    }
                 }
-            }
-            
-            (key_score > 0).then(|| (key.to_string(), key_score))
-        })
+
+                (key_score > 0).then(|| (key.to_string(), key_score))
+            })
         .collect();
 
-    scores.sort_by(|a, b| b.1.cmp(&a.1));
+        scores.sort_by(|a, b| b.1.cmp(&a.1));
 
-    scores.into_iter().map(|(key, _)| key).collect()
+        scores.into_iter().map(|(key, _)| key).collect()
+    } else {
+        Vec::new()
+    }
 }
 
 #[cfg(test)]
