@@ -50,7 +50,7 @@ pub fn save_doc(file_name: &str, value: &serde_json::Value) -> anyhow::Result<()
 
     let data = match extention.as_ref() {
         "yaml" | "yml" => serde_yaml::to_string(&value)?,
-        "json" => serde_json::to_string(&value)?,
+        "json" => serde_json::to_string_pretty(&value)?,
         _ => bail!("File Extension not supported"),
     };
 
@@ -87,7 +87,7 @@ pub fn editor(value: &serde_json::Value, file_path: &str) -> anyhow::Result<serd
             new_file.write_all(serde_yaml::to_string(&value)?.as_bytes())?;
         }
         "json" => {
-            new_file.write_all(serde_json::to_string(&value)?.as_bytes())?;
+            new_file.write_all(serde_json::to_string_pretty(&value)?.as_bytes())?;
         }
         _ => bail!("File Extension not supported"),
     }
