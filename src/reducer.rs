@@ -190,5 +190,10 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state.export_prompt_state.value = value;
             state
         },
+        Action::SetStatus { message, timeout  } => {
+            state.status.message = message;
+            state.status.timeout = timeout.and_then(|dur| std::time::Instant::now().checked_add(dur));
+            state
+        },
     }
 }

@@ -30,6 +30,33 @@ pub struct State {
     ///
     pub export_prompt_state: ExportPrompt,
 
+    ///
+    pub status: Status,
+}
+
+///
+pub enum StatusMessage {
+    ///
+    Ok(String),
+
+    ///
+    Warn(String),
+
+    ///
+    Err(String),
+
+    ///
+    Empty,
+}
+
+///
+pub struct Status {
+    ///
+    pub message: StatusMessage,
+
+    ///
+    pub timeout: Option<std::time::Instant>,
+
 }
 
 impl State {
@@ -57,6 +84,10 @@ impl State {
             },
             export_prompt_state: ExportPrompt {
                 value: String::new(),
+            },
+            status: Status {
+                message: StatusMessage::Empty,
+                timeout: None,
             },
         }
     }

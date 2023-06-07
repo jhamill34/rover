@@ -150,16 +150,17 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
         .constraints(
             [
                 Constraint::Length(3),
-                Constraint::Length(frame.size().height.saturating_sub(3)),
+                Constraint::Length(frame.size().height.saturating_sub(8)),
+                Constraint::Length(3),
             ]
             .as_ref(),
         )
         .split(frame.size())
         .into_iter();
 
-    let location = current_path(state);
 
     if let Some(rect) = main_chunks.next() {
+        let location = current_path(state);
         frame.render_widget(location, rect);
     }
 
@@ -241,7 +242,41 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 frame.render_widget(next, rect);
             }
         }
+
     }
+
+    if let Some(rect) = main_chunks.next() {
+        frame.render_widget(status(state), rect);
+    }
+}
+
+///
+fn status<'status>(state: &State) -> Paragraph<'status> {
+    let location = Block::default().title("Status").borders(Borders::ALL);
+
+    let message = match &state.status.message {
+        &crate::state::StatusMessage::Ok(ref msg) => {
+            Text::from(Spans::from(Span::styled(
+                    format!("[Ok] {msg}"),
+                    Style::default().add_modifier(Modifier::BOLD).fg(Color::Green),
+            )))
+        },
+        &crate::state::StatusMessage::Warn(ref msg) => {
+            Text::from(Spans::from(Span::styled(
+                    format!("[Warning] {msg}"),
+                    Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow),
+            )))
+        },
+        &crate::state::StatusMessage::Err(ref msg) => {
+            Text::from(Spans::from(Span::styled(
+                    format!("[Error] {msg}"),
+                    Style::default().add_modifier(Modifier::BOLD).fg(Color::Red),
+            )))
+        },
+        &crate::state::StatusMessage::Empty => Text::raw(""),
+    };
+
+    Paragraph::new(message).block(location)
 }
 
 ///
@@ -295,7 +330,8 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
             [
                 Constraint::Length(3),
                 Constraint::Length(3),
-                Constraint::Length(frame.size().height.saturating_sub(3)),
+                Constraint::Length(frame.size().height.saturating_sub(11)),
+                Constraint::Length(3),
             ]
             .as_ref(),
         )
@@ -409,5 +445,9 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 frame.render_widget(next, rect);
             }
         }
+    }
+
+    if let Some(rect) = chunks.next() {
+        frame.render_widget(status(state), rect);
     }
 }

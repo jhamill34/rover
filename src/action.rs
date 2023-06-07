@@ -1,6 +1,6 @@
 //!
 
-use crate::state::Page;
+use crate::state::{Page, StatusMessage};
 
 ///
 #[non_exhaustive]
@@ -63,5 +63,14 @@ pub enum Action {
     ExportPromptSetValue { 
         ///
         value: String 
+    },
+
+    ///
+    SetStatus { 
+        ///
+        message: StatusMessage,
+
+        ///
+        timeout: Option<std::time::Duration>,
     },
 }
