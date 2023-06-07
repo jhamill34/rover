@@ -2,7 +2,8 @@
 
 //!
 
-use std::{io, path::PathBuf, ffi::OsStr, borrow::Cow};
+use alloc::borrow::Cow;
+use std::{io, path::PathBuf, ffi::OsStr};
 
 use crossterm::{
     event::EnableMouseCapture,
