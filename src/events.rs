@@ -96,7 +96,10 @@ where
                                                                 match value {
                                                                     &serde_json::Value::Array(ref arr) => arr.len(),
                                                                     &serde_json::Value::Object(ref obj) => obj.len(),
-                                                                    _ => 0
+                                                                    &serde_json::Value::Null |
+                                                                    &serde_json::Value::Bool(_) |
+                                                                    &serde_json::Value::Number(_) |
+                                                                    &serde_json::Value::String(_) => 0 
                                                                 }
                                                             })
                                                     })

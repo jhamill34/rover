@@ -46,7 +46,10 @@ pub fn reducer(mut state: State, action: Action) -> State {
                             }
                         },
                         &serde_json::Value::Array(ref array) => array.iter().enumerate().map(|(index, _)| format!("{selected_path}/{index}")).collect(),
-                        _ => vec![]
+                        &serde_json::Value::Null |
+                            &serde_json::Value::Bool(_) |
+                            &serde_json::Value::Number(_) |
+                            &serde_json::Value::String(_) => vec![],
                     };
 
                     if !selected_children.is_empty() {
@@ -133,7 +136,10 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                 }
                             },
                             &serde_json::Value::Array(ref array) => array.iter().enumerate().map(|(index, _)| format!("{current_path}/{index}")).collect(),
-                            _ => vec![]
+                            &serde_json::Value::Null |
+                                &serde_json::Value::Bool(_) |
+                                &serde_json::Value::Number(_) |
+                                &serde_json::Value::String(_) => vec![],
 
                         }
                     });

@@ -74,6 +74,6 @@ pub enum Action {
         message: StatusMessage,
 
         ///
-        timeout: Option<std::time::Duration>,
+        timeout: Option<core::time::Duration>,
     },
 }
