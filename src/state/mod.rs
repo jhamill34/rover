@@ -9,7 +9,9 @@ pub struct State {
     ///
     pub file_name: String,
 
-    ///
+    /// 
+    /// TODO: we need to implement our own data structure to 
+    ///  have control over the key ordering (like IndexMap)
     pub doc: serde_json::Value,
 
     ///

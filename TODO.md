@@ -1,0 +1,3 @@
+- [ ] Mark what has been edited
+- [ ] Rearrange keys
+- [ ] LOGGING!!!

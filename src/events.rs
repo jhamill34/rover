@@ -216,6 +216,8 @@ where
                                 modifiers: KeyModifiers::CONTROL,
                                 ..
                             } => {
+                                // TODO: Show warning if changes have been made before exiting
+                                
                                 let empty_status = store.select(|state: &State| matches!(state.status.message, StatusMessage::Empty)).await;
                                 if empty_status {
                                     return Ok(())

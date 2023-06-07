@@ -170,6 +170,11 @@ pub fn reducer(mut state: State, action: Action) -> State {
 
                 if let Some(existing) = existing {
                     let index = Doc::build_from(&value);
+
+                    // TODO: We need to make sure that any potential references to 
+                    // our main document are namespaced before merging
+
+                    // TODO: Mark all added children as newly added so the UI can show that
                     for (other_key, other_value) in index.adj_list {
                         let other_key = other_key.replace('#', path);
                         let other_value = other_value.iter().map(|child_path| child_path.replace('#', path)).collect();
