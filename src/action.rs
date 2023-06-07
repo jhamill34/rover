@@ -54,6 +54,9 @@ pub enum Action {
     },
 
     ///
+    SearchSetAllPaths,
+
+    ///
     ImportPromptSetValue { 
         ///
         value: String 

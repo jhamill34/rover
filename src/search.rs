@@ -132,7 +132,7 @@ fn score(target: &str, query: &str, criteria: &ScoringCriteria, opt: &mut [i16])
 ///
 pub fn filter(
     doc: &serde_json::Value, 
-    graph: &HashMap<String, Vec<String>>, 
+    graph: &HashMap<String, usize>, 
     value: &str
 ) -> Vec<String> {
     // TODO: Handle incremental search with caching and prefix/postifx tree
@@ -144,7 +144,7 @@ pub fn filter(
             .filter_map(|(key, children)| {
                 let mut key_score = score(key, value, &criteria, &mut opt);
 
-                if children.is_empty() {
+                if *children == 0 {
                     let raw = key.parse::<JsonPointer<_, _>>().ok()
                         .and_then(|path| path.get(doc).ok())
                         .and_then(|node| serde_json::to_string_pretty(&node).ok());

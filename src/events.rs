@@ -87,8 +87,21 @@ where
                                             .current
                                             .options
                                             .get(state.nav_state.current.selected)
-                                            .and_then(|path| state.index.adj_list.get(path))
-                                            .map_or(0, Vec::len)
+                                            .and_then(|path| {
+                                                path.strip_prefix('#')
+                                                    .and_then(|path| {
+                                                        path.parse::<JsonPointer<_, _>>().ok()
+                                                            .and_then(|pointer| pointer.get(&state.doc).ok())
+                                                            .map(|value| {
+                                                                match value {
+                                                                    &serde_json::Value::Array(ref arr) => arr.len(),
+                                                                    &serde_json::Value::Object(ref obj) => obj.len(),
+                                                                    _ => 0
+                                                                }
+                                                            })
+                                                    })
+                                            })
+                                            .unwrap_or(0)
                                     })
                                     .await;
 
@@ -203,6 +216,7 @@ where
                                 code: KeyCode::Char('/'),
                                 ..
                             } => {
+                                store.dispatch(Action::SearchSetAllPaths).await;
                                 store
                                     .dispatch(Action::SetCurrentPage { page: Page::Search })
                                     .await;

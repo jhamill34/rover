@@ -1,3 +1,4 @@
 - [ ] Mark what has been edited
+- [ ] Undo operations (edit log?)
 - [ ] Rearrange keys
 - [ ] LOGGING!!!

@@ -26,7 +26,7 @@ use anyhow::anyhow;
 use events::event_listener;
 use lifecycle::Application;
 use redux_rs::Store;
-use state::{index::Doc, State};
+use state::State;
 use ui::configure_terminal;
 use util::fetch_document;
 
@@ -47,8 +47,7 @@ async fn main() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow!("Missing filename in argument list."))?;
 
     let doc = fetch_document(file_name)?;
-    let index = Doc::build_from(&doc);
-    let initial_state = State::new(doc, index, file_name.clone());
+    let initial_state = State::new(doc, file_name.clone());
 
     // 
     //  !!!PANICS beyond this point will ruin the terminal state!!!

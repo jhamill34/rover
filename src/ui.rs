@@ -382,7 +382,7 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 })
             .collect();
 
-            let title = format!("Paths ({}/{})", filtered_items.len(), state.index.adj_list.len());
+            let title = format!("Paths ({}/{})", filtered_items.len(), state.search_state.all_paths.len());
             let search_paths = Block::default().title(title).borders(Borders::ALL);
             let search_paths = List::new(filtered_items)
                 .highlight_symbol("> ")

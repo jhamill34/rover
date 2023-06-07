@@ -1,8 +1,8 @@
 //!
 
-use self::index::{Doc, ROOT_PATH};
+use std::collections::HashMap;
 
-pub mod index;
+pub const ROOT_PATH: &str = "#";
 
 ///
 pub struct State {
@@ -13,9 +13,6 @@ pub struct State {
     /// TODO: we need to implement our own data structure to 
     ///  have control over the key ordering (like IndexMap)
     pub doc: serde_json::Value,
-
-    ///
-    pub index: Doc,
 
     ///
     pub current_page: Page,
@@ -63,11 +60,10 @@ pub struct Status {
 
 impl State {
     ///
-    pub fn new(doc: serde_json::Value, index: Doc, file_name: String) -> Self {
+    pub fn new(doc: serde_json::Value, file_name: String) -> Self {
         Self {
             file_name,
             doc,
-            index,
             current_page: Page::Nav,
             nav_state: Nav {
                 current: Step {
@@ -79,6 +75,7 @@ impl State {
             search_state: Search {
                 value: String::new(),
                 filtered_paths: vec![],
+                all_paths: HashMap::new(),
                 selected: 0,
             },
             import_prompt_state: ImportPrompt {
@@ -117,6 +114,9 @@ pub struct Nav {
 pub struct Search {
     ///
     pub value: String,
+
+    ///
+    pub all_paths: HashMap<String, usize>,
 
     ///
     pub filtered_paths: Vec<String>,
