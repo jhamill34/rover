@@ -13,40 +13,36 @@ impl ValuePointer {
     ///
     pub fn get<'value>(&self, root: &'value Value) -> anyhow::Result<&'value Value> {
         self.tokens.iter().fold(Ok(root), |acc, next| {
-            acc.and_then(|acc| {
-                match acc {
-                    Value::Array(arr) => {
-                        let idx = next.parse::<usize>()?;
-                        arr.get(idx).ok_or_else(|| anyhow!("Index {} out of bounds", idx))
-                    },
-                    Value::Object(obj) => obj.get(next).ok_or_else(|| anyhow!("Key {} not found", next)),
-                    Value::Null |
-                    Value::Bool(_) |
-                    Value::String(_) |
-                    Value::Number(_) => {
-                        Err(anyhow!("Cannot index into a non-object or array value"))
-                    }
+            acc.and_then(|acc| match acc {
+                Value::Array(arr) => {
+                    let idx = next.parse::<usize>()?;
+                    arr.get(idx)
+                        .ok_or_else(|| anyhow!("Index {} out of bounds", idx))
+                }
+                Value::Object(obj) => obj
+                    .get(next)
+                    .ok_or_else(|| anyhow!("Key {} not found", next)),
+                Value::Null | Value::Bool(_) | Value::String(_) | Value::Number(_) => {
+                    Err(anyhow!("Cannot index into a non-object or array value"))
                 }
             })
         })
     }
-    
+
     ///
     pub fn get_mut<'value>(&self, root: &'value mut Value) -> anyhow::Result<&'value mut Value> {
         self.tokens.iter().fold(Ok(root), |acc, next| {
-            acc.and_then(|acc| {
-                match acc {
-                    Value::Array(arr) => {
-                        let idx = next.parse::<usize>()?;
-                        arr.get_mut(idx).ok_or_else(|| anyhow!("Index {} out of bounds", idx))
-                    },
-                    Value::Object(obj) => obj.get_mut(next).ok_or_else(|| anyhow!("Key {} not found", next)),
-                    Value::Null |
-                    Value::Bool(_) |
-                    Value::String(_) |
-                    Value::Number(_) => {
-                        Err(anyhow!("Cannot index into a non-object or array value"))
-                    }
+            acc.and_then(|acc| match acc {
+                Value::Array(arr) => {
+                    let idx = next.parse::<usize>()?;
+                    arr.get_mut(idx)
+                        .ok_or_else(|| anyhow!("Index {} out of bounds", idx))
+                }
+                Value::Object(obj) => obj
+                    .get_mut(next)
+                    .ok_or_else(|| anyhow!("Key {} not found", next)),
+                Value::Null | Value::Bool(_) | Value::String(_) | Value::Number(_) => {
+                    Err(anyhow!("Cannot index into a non-object or array value"))
                 }
             })
         })
@@ -75,14 +71,12 @@ impl FromStr for ValuePointer {
                         buffer.clear();
                     }
                 }
-                b'~' => {
-                    match bytes_iter.next() {
-                        Some(b'0') => buffer.push(b'~'),
-                        Some(b'1') => buffer.push(b'/'),
-                        _ => bail!("Invalid pointer")
-                    }
+                b'~' => match bytes_iter.next() {
+                    Some(b'0') => buffer.push(b'~'),
+                    Some(b'1') => buffer.push(b'/'),
+                    _ => bail!("Invalid pointer"),
                 },
-                _ => buffer.push(*byte)
+                _ => buffer.push(*byte),
             }
         }
 
@@ -94,5 +88,3 @@ impl FromStr for ValuePointer {
         Ok(ValuePointer { tokens })
     }
 }
-
-

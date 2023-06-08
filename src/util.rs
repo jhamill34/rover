@@ -26,14 +26,13 @@ pub fn fetch_document(file_name: &str) -> anyhow::Result<Value> {
         "yaml" | "yml" => {
             let doc = serde_yaml::from_str(&doc)?;
             Ok(doc)
-
         }
         "json" => {
             let doc = serde_json::from_str(&doc)?;
             Ok(doc)
         }
         _ => bail!("File Extension not supported"),
-    } 
+    }
 }
 
 ///
@@ -110,4 +109,3 @@ pub fn editor(value: &Value, file_path: &str) -> anyhow::Result<Value> {
         _ => bail!("File Extension not supported"),
     }
 }
-

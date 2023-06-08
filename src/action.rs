@@ -1,14 +1,17 @@
 //!
 
-use crate::{state::{Page, StatusMessage}, value::Value};
+use crate::{
+    state::{Page, StatusMessage},
+    value::Value,
+};
 
 ///
 #[non_exhaustive]
 pub enum Action {
     ///
-    SetCurrentPage { 
+    SetCurrentPage {
         ///
-        page: Page 
+        page: Page,
     },
 
     ///
@@ -33,18 +36,18 @@ pub enum Action {
     NavTop,
 
     ///
-    NavGoto { 
+    NavGoto {
         ///
-        path: String 
+        path: String,
     },
 
     ///
     NavBottom,
 
     ///
-    DocumentReplaceCurrent { 
+    DocumentReplaceCurrent {
         ///
-        value: Value 
+        value: Value,
     },
 
     ///
@@ -55,7 +58,7 @@ pub enum Action {
 
     ///
     Snapshot,
-    
+
     ///
     SearchUp,
 
@@ -63,28 +66,28 @@ pub enum Action {
     SearchDown,
 
     ///
-    SearchSetValue { 
+    SearchSetValue {
         ///
-        value: String 
+        value: String,
     },
 
     ///
     SearchSetAllPaths,
 
     ///
-    ImportPromptSetValue { 
+    ImportPromptSetValue {
         ///
-        value: String 
+        value: String,
     },
 
     ///
-    ExportPromptSetValue { 
+    ExportPromptSetValue {
         ///
-        value: String 
+        value: String,
     },
 
     ///
-    SetStatus { 
+    SetStatus {
         ///
         message: StatusMessage,
 

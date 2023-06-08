@@ -1,7 +1,7 @@
 #![allow(
     clippy::separated_literal_suffix,
     clippy::integer_arithmetic,
-    clippy::arithmetic_side_effects,
+    clippy::arithmetic_side_effects
 )]
 
 //!
@@ -12,9 +12,9 @@ use std::{collections::HashMap, sync::Mutex};
 
 use lazy_static::lazy_static;
 
-use crate::{value::Value, pointer::ValuePointer};
+use crate::{pointer::ValuePointer, value::Value};
 
-lazy_static!{ 
+lazy_static! {
     static ref OPT: Mutex<Vec<i16>> = Mutex::new(vec![0_i16; 102_400]);
 }
 
@@ -33,15 +33,15 @@ pub struct ScoringCriteria {
 impl Default for ScoringCriteria {
     fn default() -> Self {
         Self {
-            eq: 16, 
+            eq: 16,
             target_gap: -3,
             target_gap_extend: -1,
         }
     }
 }
 
-/// Makes sure that all characters in query 
-/// exist in the query string in the correct order. 
+/// Makes sure that all characters in query
+/// exist in the query string in the correct order.
 fn validate(target: &[char], query: &[char]) -> bool {
     let mut query_ptr = 0;
     for ch in target {
@@ -120,7 +120,6 @@ fn score(target: &str, query: &str, criteria: &ScoringCriteria, opt: &mut [i16])
             };
             *score_location = score;
 
-
             if (height - 1) == row && score > max_score {
                 max_score = score;
             }
@@ -131,22 +130,21 @@ fn score(target: &str, query: &str, criteria: &ScoringCriteria, opt: &mut [i16])
 }
 
 ///
-pub fn filter(
-    doc: &Value, 
-    graph: &HashMap<String, usize>, 
-    value: &str
-) -> Vec<String> {
+pub fn filter(doc: &Value, graph: &HashMap<String, usize>, value: &str) -> Vec<String> {
     // TODO: Handle incremental search with caching and prefix/postifx tree
     // TODO: Handle special syntax for exact and negate search
     if let Ok(mut opt) = OPT.lock() {
         let criteria = ScoringCriteria::default();
 
-        let mut scores: Vec<(String, i16)> = graph.iter()
+        let mut scores: Vec<(String, i16)> = graph
+            .iter()
             .filter_map(|(key, children)| {
                 let mut key_score = score(key, value, &criteria, &mut opt);
 
                 if *children == 0 {
-                    let raw = key.parse::<ValuePointer>().ok()
+                    let raw = key
+                        .parse::<ValuePointer>()
+                        .ok()
                         .and_then(|path| path.get(doc).ok())
                         .and_then(|node| serde_json::to_string_pretty(&node).ok());
 
@@ -157,7 +155,7 @@ pub fn filter(
 
                 (key_score > 0).then(|| (key.to_string(), key_score))
             })
-        .collect();
+            .collect();
 
         scores.sort_by(|a, b| b.1.cmp(&a.1));
 
@@ -170,7 +168,7 @@ pub fn filter(
 #[cfg(test)]
 mod test {
     use super::*;
- 
+
     #[test]
     fn test_missing_chars_invalid() {
         let opt = &mut [0_i16; 50];
@@ -189,23 +187,26 @@ mod test {
     fn test_all_match_score() {
         let opt = &mut [0_i16; 50];
 
-        assert_eq!(80, score("Hello", "Hello", &ScoringCriteria::default(), opt));
+        assert_eq!(
+            80,
+            score("Hello", "Hello", &ScoringCriteria::default(), opt)
+        );
     }
-    
+
     #[test]
     fn test_partial_match_front() {
         let opt = &mut [0_i16; 50];
 
         assert_eq!(32, score("Hello", "He", &ScoringCriteria::default(), opt));
     }
-    
+
     #[test]
     fn test_partial_match_end() {
         let opt = &mut [0_i16; 50];
 
         assert_eq!(48, score("Hello", "llo", &ScoringCriteria::default(), opt));
     }
-    
+
     #[test]
     fn test_partial_match_gap() {
         let opt = &mut [0_i16; 50];
@@ -213,4 +214,3 @@ mod test {
         assert_eq!(44, score("Hello", "Hlo", &ScoringCriteria::default(), opt));
     }
 }
-

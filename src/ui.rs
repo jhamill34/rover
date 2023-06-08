@@ -3,7 +3,7 @@
 //!
 
 use alloc::borrow::Cow;
-use std::{io, path::PathBuf, ffi::OsStr};
+use std::{ffi::OsStr, io, path::PathBuf};
 
 use crossterm::{
     event::EnableMouseCapture,
@@ -13,13 +13,17 @@ use crossterm::{
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
-    style::{Color, Style, Modifier},
+    style::{Color, Modifier, Style},
     text::{Span, Spans, Text},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     Frame, Terminal,
 };
 
-use crate::{state::{Page, State, Step}, pointer::ValuePointer, value::Value};
+use crate::{
+    pointer::ValuePointer,
+    state::{Page, State, Step},
+    value::Value,
+};
 
 ///
 pub fn configure_terminal() -> anyhow::Result<Terminal<CrosstermBackend<io::Stdout>>> {
@@ -51,7 +55,8 @@ pub fn import_prompt<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 Constraint::Ratio(1, 4),
                 Constraint::Ratio(2, 4),
                 Constraint::Ratio(1, 4),
-            ].as_ref()
+            ]
+            .as_ref(),
         )
         .split(frame.size());
 
@@ -65,27 +70,27 @@ pub fn import_prompt<B: Backend>(frame: &mut Frame<B>, state: &State) {
                     Constraint::Length(vertical_margin),
                     Constraint::Length(4),
                     Constraint::Length(vertical_margin),
-                ].as_ref()
+                ]
+                .as_ref(),
             )
             .split(*column);
 
         if let Some(row) = vertical.get(1) {
-            let prompt = Block::default()
-                .title("Import")
-                .borders(Borders::ALL);
+            let prompt = Block::default().title("Import").borders(Borders::ALL);
 
             let text = Paragraph::new(Text::from(vec![
                 Spans::from(Span::styled(
                     "  Select the file path to import into the current document:",
-                    Style::default().add_modifier(Modifier::BOLD).fg(Color::White),
+                    Style::default()
+                        .add_modifier(Modifier::BOLD)
+                        .fg(Color::White),
                 )),
                 Spans::from(Span::styled(
                     format!(" > {}", state.import_prompt_state.value),
-                    Style::default()
-                        .fg(Color::White),
+                    Style::default().fg(Color::White),
                 )),
-            ])).block(prompt);
-
+            ]))
+            .block(prompt);
 
             frame.render_widget(text, *row);
         }
@@ -101,7 +106,8 @@ pub fn export_prompt<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 Constraint::Ratio(1, 4),
                 Constraint::Ratio(2, 4),
                 Constraint::Ratio(1, 4),
-            ].as_ref()
+            ]
+            .as_ref(),
         )
         .split(frame.size());
 
@@ -115,27 +121,27 @@ pub fn export_prompt<B: Backend>(frame: &mut Frame<B>, state: &State) {
                     Constraint::Length(vertical_margin),
                     Constraint::Length(4),
                     Constraint::Length(vertical_margin),
-                ].as_ref()
+                ]
+                .as_ref(),
             )
             .split(*column);
 
         if let Some(row) = vertical.get(1) {
-            let prompt = Block::default()
-                .title("Export")
-                .borders(Borders::ALL);
+            let prompt = Block::default().title("Export").borders(Borders::ALL);
 
             let text = Paragraph::new(Text::from(vec![
                 Spans::from(Span::styled(
                     "  Select the file path to export the current document to:",
-                    Style::default().add_modifier(Modifier::BOLD).fg(Color::White),
+                    Style::default()
+                        .add_modifier(Modifier::BOLD)
+                        .fg(Color::White),
                 )),
                 Spans::from(Span::styled(
                     format!(" > {}", state.export_prompt_state.value),
-                    Style::default()
-                        .fg(Color::White),
+                    Style::default().fg(Color::White),
                 )),
-            ])).block(prompt);
-
+            ]))
+            .block(prompt);
 
             frame.render_widget(text, *row);
         }
@@ -158,7 +164,6 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
         .split(frame.size())
         .into_iter();
 
-
     if let Some(rect) = main_chunks.next() {
         let location = current_path(state);
         frame.render_widget(location, rect);
@@ -170,12 +175,12 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
             .margin(1)
             .constraints(
                 [
-                Constraint::Ratio(1, 3),
-                Constraint::Ratio(1, 3),
-                Constraint::Ratio(1, 3),
+                    Constraint::Ratio(1, 3),
+                    Constraint::Ratio(1, 3),
+                    Constraint::Ratio(1, 3),
                 ]
                 .as_ref(),
-                )
+            )
             .split(rect)
             .into_iter();
 
@@ -191,7 +196,8 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
 
         if let Some(rect) = chunks.next() {
             let current = Block::default().title("Current").borders(Borders::ALL);
-            let (current, mut current_state) = step_list(&state.nav_state.current, &state.doc, current);
+            let (current, mut current_state) =
+                step_list(&state.nav_state.current, &state.doc, current);
             frame.render_stateful_widget(current, rect, &mut current_state);
         }
 
@@ -199,7 +205,9 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
             let selected_path = state
                 .nav_state
                 .current
-                .path.parse::<ValuePointer>().ok()
+                .path
+                .parse::<ValuePointer>()
+                .ok()
                 .and_then(|path| path.get(&state.doc).ok());
 
             let extension = PathBuf::from(&state.file_name);
@@ -210,20 +218,16 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
             if let Some(selected_path) = selected_path {
                 let selected_path = match selected_path {
                     &Value::Array(ref array) => array.get(state.nav_state.current.selected),
-                    &Value::Object(ref object) => object.get_index(state.nav_state.current.selected).map(|(_, value)| value),
-                    &Value::Null |
-                    &Value::Bool(_) |
-                    &Value::String(_) |
-                    &Value::Number(_) => None
+                    &Value::Object(ref object) => object
+                        .get_index(state.nav_state.current.selected)
+                        .map(|(_, value)| value),
+                    &Value::Null | &Value::Bool(_) | &Value::String(_) | &Value::Number(_) => None,
                 };
-                let selected_path = selected_path
-                    .and_then(|value| {
-                        match extension.as_ref() {
-                            "yaml" | "yml" => serde_yaml::to_string(value).ok(),
-                            "json" => serde_json::to_string_pretty(value).ok(),
-                            _ => None
-                        }
-                    });
+                let selected_path = selected_path.and_then(|value| match extension.as_ref() {
+                    "yaml" | "yml" => serde_yaml::to_string(value).ok(),
+                    "json" => serde_json::to_string_pretty(value).ok(),
+                    _ => None,
+                });
 
                 if let Some(selected_path) = selected_path {
                     let text: Vec<Spans> = selected_path
@@ -248,7 +252,6 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 frame.render_widget(next, rect);
             }
         }
-
     }
 
     if let Some(rect) = main_chunks.next() {
@@ -261,24 +264,22 @@ fn status<'status>(state: &State) -> Paragraph<'status> {
     let location = Block::default().title("Status").borders(Borders::ALL);
 
     let message = match &state.status.message {
-        &crate::state::StatusMessage::Ok(ref msg) => {
-            Text::from(Spans::from(Span::styled(
-                    format!("[Ok] {msg}"),
-                    Style::default().add_modifier(Modifier::BOLD).fg(Color::Green),
-            )))
-        },
-        &crate::state::StatusMessage::Warn(ref msg) => {
-            Text::from(Spans::from(Span::styled(
-                    format!("[Warning] {msg}"),
-                    Style::default().add_modifier(Modifier::BOLD).fg(Color::Yellow),
-            )))
-        },
-        &crate::state::StatusMessage::Err(ref msg) => {
-            Text::from(Spans::from(Span::styled(
-                    format!("[Error] {msg}"),
-                    Style::default().add_modifier(Modifier::BOLD).fg(Color::Red),
-            )))
-        },
+        &crate::state::StatusMessage::Ok(ref msg) => Text::from(Spans::from(Span::styled(
+            format!("[Ok] {msg}"),
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Green),
+        ))),
+        &crate::state::StatusMessage::Warn(ref msg) => Text::from(Spans::from(Span::styled(
+            format!("[Warning] {msg}"),
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .fg(Color::Yellow),
+        ))),
+        &crate::state::StatusMessage::Err(ref msg) => Text::from(Spans::from(Span::styled(
+            format!("[Error] {msg}"),
+            Style::default().add_modifier(Modifier::BOLD).fg(Color::Red),
+        ))),
         &crate::state::StatusMessage::Empty => Text::raw(""),
     };
 
@@ -294,24 +295,26 @@ fn current_path<'path>(state: &State) -> Paragraph<'path> {
 
 ///
 fn step_list<'list>(step: &Step, doc: &Value, parent: Block<'list>) -> (List<'list>, ListState) {
-    let prev_items: Vec<ListItem> = step 
-        .path.parse::<ValuePointer>().ok()
+    let prev_items: Vec<ListItem> = step
+        .path
+        .parse::<ValuePointer>()
+        .ok()
         .and_then(|pointer| pointer.get(doc).ok())
-        .map(|value| {
-            match value {
-                &Value::Array(ref array) => array.iter().enumerate().map(|(i, _)| i.to_string()).collect(),
-                &Value::Object(ref object) => object.keys().cloned().collect(),
-                &Value::Null |
-                &Value::Bool(_) |
-                &Value::String(_) |
-                &Value::Number(_) => vec![]
-            }
+        .map(|value| match value {
+            &Value::Array(ref array) => array
+                .iter()
+                .enumerate()
+                .map(|(i, _)| i.to_string())
+                .collect(),
+            &Value::Object(ref object) => object.keys().cloned().collect(),
+            &Value::Null | &Value::Bool(_) | &Value::String(_) | &Value::Number(_) => vec![],
         })
         .map(|name| {
-            name.into_iter().map(|name| {
-                ListItem::new(Text::raw(name))
-            }).collect()
-        }).unwrap_or_default();
+            name.into_iter()
+                .map(|name| ListItem::new(Text::raw(name)))
+                .collect()
+        })
+        .unwrap_or_default();
 
     let mut prev_items_state = ListState::default();
     prev_items_state.select(Some(step.selected));
@@ -323,7 +326,8 @@ fn step_list<'list>(step: &Step, doc: &Value, parent: Block<'list>) -> (List<'li
             Style::default()
                 .add_modifier(Modifier::BOLD)
                 // .bg(Color::White)
-                .fg(Color::Yellow));
+                .fg(Color::Yellow),
+        );
 
     (prev, prev_items_state)
 }
@@ -345,21 +349,18 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
         .split(frame.size())
         .into_iter();
 
-
     if let Some(rect) = chunks.next() {
         let input = Block::default().title("Input").borders(Borders::ALL);
         let input_text = Text::raw(state.search_state.value.clone());
         let input_paragraph = Paragraph::new(input_text).block(input);
         frame.render_widget(input_paragraph, rect);
     }
-    
+
     if let Some(rect) = chunks.next() {
         let selected_path = state
             .search_state
             .filtered_paths
-            .get(
-                state.search_state.selected
-                );
+            .get(state.search_state.selected);
         let current_path = Block::default().borders(Borders::ALL);
         let current_path = Paragraph::new(Text::raw(selected_path.cloned().unwrap_or_default()))
             .block(current_path);
@@ -370,12 +371,7 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
         let mut result_chunks = Layout::default()
             .direction(Direction::Horizontal)
             .margin(1)
-            .constraints(
-                [
-                Constraint::Ratio(1, 2),
-                Constraint::Ratio(1, 2),
-                ].as_ref()
-                )
+            .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)].as_ref())
             .split(rect)
             .into_iter();
 
@@ -384,12 +380,14 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 .search_state
                 .filtered_paths
                 .iter()
-                .map(|path| {
-                    ListItem::new(Text::raw(path))
-                })
-            .collect();
+                .map(|path| ListItem::new(Text::raw(path)))
+                .collect();
 
-            let title = format!("Paths ({}/{})", filtered_items.len(), state.search_state.all_paths.len());
+            let title = format!(
+                "Paths ({}/{})",
+                filtered_items.len(),
+                state.search_state.all_paths.len()
+            );
             let search_paths = Block::default().title(title).borders(Borders::ALL);
             let search_paths = List::new(filtered_items)
                 .highlight_symbol("> ")
@@ -397,7 +395,8 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
                     Style::default()
                         // .bg(Color::White)
                         .add_modifier(Modifier::BOLD)
-                        .fg(Color::Yellow))
+                        .fg(Color::Yellow),
+                )
                 .block(search_paths);
 
             let mut search_paths_selected = ListState::default();
@@ -411,7 +410,7 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 .search_state
                 .filtered_paths
                 .get(state.search_state.selected);
-            
+
             let extension = PathBuf::from(&state.file_name);
             let extension = extension
                 .extension()
@@ -422,12 +421,10 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
                     .strip_prefix('#')
                     .and_then(|path| path.parse::<ValuePointer>().ok())
                     .and_then(|path| path.get(&state.doc).ok())
-                    .and_then(|value| {
-                        match extension.as_ref() {
-                            "yaml" | "yml" => serde_yaml::to_string(value).ok(),
-                            "json" => serde_json::to_string_pretty(value).ok(),
-                            _ => None
-                        }
+                    .and_then(|value| match extension.as_ref() {
+                        "yaml" | "yml" => serde_yaml::to_string(value).ok(),
+                        "json" => serde_json::to_string_pretty(value).ok(),
+                        _ => None,
                     });
                 if let Some(selected_path) = selected_path {
                     let text: Vec<Spans> = selected_path

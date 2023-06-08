@@ -1,10 +1,14 @@
-use serde::{de::Visitor, Deserialize, Serialize, ser::{SerializeSeq, SerializeMap}};
+use serde::{
+    de::Visitor,
+    ser::{SerializeMap, SerializeSeq},
+    Deserialize, Serialize,
+};
 
 ///
-#[derive(Clone, Debug, PartialEq, Eq)] 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Value {
     ///
-    Null, 
+    Null,
 
     ///
     Bool(bool),
@@ -24,7 +28,7 @@ pub enum Value {
 
 ///
 struct ValueVisitor;
-impl <'de> Visitor<'de> for ValueVisitor {
+impl<'de> Visitor<'de> for ValueVisitor {
     type Value = Value;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -32,7 +36,9 @@ impl <'de> Visitor<'de> for ValueVisitor {
     }
 
     fn visit_unit<E>(self) -> Result<Self::Value, E>
-        where E: serde::de::Error, {
+    where
+        E: serde::de::Error,
+    {
         Ok(Value::Null)
     }
 
@@ -41,42 +47,58 @@ impl <'de> Visitor<'de> for ValueVisitor {
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where E: serde::de::Error, {
+    where
+        E: serde::de::Error,
+    {
         self.visit_string(v.to_owned())
     }
 
     fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-        where E: serde::de::Error, {
+    where
+        E: serde::de::Error,
+    {
         Ok(Value::Number(v.into()))
     }
 
     fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
-        where E: serde::de::Error, {
+    where
+        E: serde::de::Error,
+    {
         Ok(Value::Number(v.into()))
     }
 
     fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
-        where E: serde::de::Error, {
+    where
+        E: serde::de::Error,
+    {
         Ok(serde_json::Number::from_f64(v).map_or(Value::Null, Value::Number))
     }
 
     fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-        where E: serde::de::Error, {
+    where
+        E: serde::de::Error,
+    {
         Ok(Value::String(v))
     }
 
     fn visit_none<E>(self) -> Result<Self::Value, E>
-        where E: serde::de::Error, {
+    where
+        E: serde::de::Error,
+    {
         Ok(Value::Null)
     }
 
     fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
-        where D: serde::Deserializer<'de>, {
+    where
+        D: serde::Deserializer<'de>,
+    {
         Deserialize::deserialize(deserializer)
     }
 
     fn visit_seq<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
-        where V: serde::de::SeqAccess<'de>, {
+    where
+        V: serde::de::SeqAccess<'de>,
+    {
         let mut vec = Vec::new();
         while let Some(elem) = visitor.next_element()? {
             vec.push(elem);
@@ -85,7 +107,9 @@ impl <'de> Visitor<'de> for ValueVisitor {
     }
 
     fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-        where A: serde::de::MapAccess<'de>, {
+    where
+        A: serde::de::MapAccess<'de>,
+    {
         let mut values = indexmap::IndexMap::new();
 
         while let Some((key, value)) = map.next_entry()? {
@@ -96,17 +120,21 @@ impl <'de> Visitor<'de> for ValueVisitor {
     }
 }
 
-impl <'de> Deserialize<'de> for Value {
+impl<'de> Deserialize<'de> for Value {
     #[inline]
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where D: serde::Deserializer<'de> {
+    where
+        D: serde::Deserializer<'de>,
+    {
         deserializer.deserialize_any(ValueVisitor)
     }
 }
 
 impl Serialize for Value {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where S: serde::Serializer {
+    where
+        S: serde::Serializer,
+    {
         match *self {
             Value::Null => serializer.serialize_unit(),
             Value::Bool(v) => serializer.serialize_bool(v),
@@ -125,9 +153,7 @@ impl Serialize for Value {
                     map.serialize_entry(key, value)?;
                 }
                 map.end()
-            },
+            }
         }
     }
 }
-
-

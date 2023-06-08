@@ -17,10 +17,7 @@
 extern crate alloc;
 use alloc::sync::Arc;
 
-use std::{
-    env,
-    sync::Mutex,
-};
+use std::{env, sync::Mutex};
 
 use anyhow::anyhow;
 use events::event_listener;
@@ -33,13 +30,13 @@ use util::fetch_document;
 mod action;
 mod events;
 mod lifecycle;
+mod pointer;
 mod reducer;
+mod search;
 mod state;
 mod ui;
 mod util;
-mod search;
 mod value;
-mod pointer;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -51,7 +48,7 @@ async fn main() -> anyhow::Result<()> {
     let doc = fetch_document(file_name)?;
     let initial_state = State::new(doc, file_name.clone());
 
-    // 
+    //
     //  !!!PANICS beyond this point will ruin the terminal state!!!
     //
     let terminal = configure_terminal()?;
@@ -72,10 +69,10 @@ async fn main() -> anyhow::Result<()> {
 
     let result = tokio::spawn(event_listener(store, Arc::clone(&lifecycle))).await?;
 
-    // At this point we just really want to fix the terminal if we can 
+    // At this point we just really want to fix the terminal if we can
     let mut lifecycle = match lifecycle.lock() {
         Ok(lock) => lock,
-        Err(err) => err.into_inner()
+        Err(err) => err.into_inner(),
     };
     lifecycle.suspend()?;
 
@@ -85,4 +82,3 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-

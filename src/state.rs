@@ -44,8 +44,8 @@ pub struct State {
 pub enum UndoAction {
     ///
     ReplaceCurrent {
-        /// 
-        path: String, 
+        ///
+        path: String,
 
         ///
         value: Value,
@@ -61,7 +61,7 @@ pub enum UndoAction {
 
         ///
         to: usize,
-    }
+    },
 }
 
 ///
@@ -86,7 +86,6 @@ pub struct Status {
 
     ///
     pub timeout: Option<std::time::Instant>,
-
 }
 
 impl State {
@@ -185,4 +184,3 @@ pub enum Page {
     ///
     ExportPrompt,
 }
-
