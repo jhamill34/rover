@@ -1,15 +1,28 @@
 use serde::{de::Visitor, Deserialize, Serialize, ser::{SerializeSeq, SerializeMap}};
 
+///
 #[derive(Clone, Debug, PartialEq, Eq)] 
 pub enum Value {
+    ///
     Null, 
+
+    ///
     Bool(bool),
+
+    ///
     String(String),
+
+    ///
     Number(serde_json::Number),
+
+    ///
     Array(Vec<Value>),
+
+    ///
     Object(indexmap::IndexMap<String, Value>),
 }
 
+///
 struct ValueVisitor;
 impl <'de> Visitor<'de> for ValueVisitor {
     type Value = Value;

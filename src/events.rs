@@ -141,6 +141,18 @@ where
                                 store.dispatch(Action::SetCurrentPage { page: Page::ExportPrompt }).await;
                             }
                             KeyEvent {
+                                code: KeyCode::Char('u'),
+                                ..
+                            } => {
+                                store.dispatch(Action::Undo).await;
+                            }
+                            KeyEvent {
+                                code: KeyCode::Char('r'),
+                                ..
+                            } => {
+                                store.dispatch(Action::Redo).await;
+                            }
+                            KeyEvent {
                                 code: KeyCode::Char('e'),
                                 modifiers: KeyModifiers::CONTROL,
                                 ..

@@ -46,6 +46,12 @@ pub enum Action {
         ///
         value: Value 
     },
+
+    ///
+    Undo,
+
+    ///
+    Redo,
     
     ///
     SearchUp,

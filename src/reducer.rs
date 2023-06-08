@@ -77,37 +77,49 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::NavMoveUp => {
-            if let Some(previous) = state.nav_state.history.last()
+            if let Some(previous_path) = state.nav_state.history.last()
                 .and_then(|step| step.options.get(step.selected))
-                .and_then(|path| path.parse::<ValuePointer>().ok())
-                .and_then(|pointer| pointer.get_mut(&mut state.doc).ok())
             {
-                let option_count = state.nav_state.current.options
-                    .len()
-                    .saturating_sub(1);
+                if let Some(previous) = previous_path.parse::<ValuePointer>().ok().and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
+                    let option_count = state.nav_state.current.options
+                        .len()
+                        .saturating_sub(1);
 
-                let cur = state.nav_state.current.selected;
-                let new_selected = cur
-                    .checked_sub(1)
-                    .unwrap_or(option_count);
+                    let cur = state.nav_state.current.selected;
+                    let new_selected = cur
+                        .checked_sub(1)
+                        .unwrap_or(option_count);
 
-                match previous {
-                    &mut Value::Object(ref mut obj) => {
-                        obj.swap_indices(cur, new_selected);
-                        state.nav_state.current.options.swap(cur, new_selected);
-                    },
-                    &mut Value::Array(ref mut arr) => {
-                        arr.swap(cur, new_selected);
-                    },
-                    &mut (
-                        Value::Null |
-                        Value::Bool(_) |
-                        Value::Number(_) |
-                        Value::String(_)
-                    ) => {},
+                    match previous {
+                        &mut Value::Object(ref mut obj) => {
+                            obj.swap_indices(cur, new_selected);
+                            state.nav_state.current.options.swap(cur, new_selected);
+                            state.undo_stack.push(state::UndoAction::SwapIndicies { 
+                                path: previous_path.clone(), 
+                                from: new_selected, 
+                                to: cur
+                            });
+                            state.redo_stack.clear();
+                        },
+                        &mut Value::Array(ref mut arr) => {
+                            arr.swap(cur, new_selected);
+                            state.undo_stack.push(state::UndoAction::SwapIndicies { 
+                                path: previous_path.clone(), 
+                                from: new_selected, 
+                                to: cur
+                            });
+                            state.redo_stack.clear();
+                        },
+                        &mut (
+                            Value::Null |
+                            Value::Bool(_) |
+                            Value::Number(_) |
+                            Value::String(_)
+                            ) => {},
+                    }
+
+                    state.nav_state.current.selected = new_selected;
                 }
-
-                state.nav_state.current.selected = new_selected;
             }
 
             state
@@ -124,34 +136,46 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::NavMoveDown => {
-            if let Some(previous) = state.nav_state.history.last()
+            if let Some(previous_path) = state.nav_state.history.last()
                 .and_then(|step| step.options.get(step.selected))
-                .and_then(|path| path.parse::<ValuePointer>().ok())
-                .and_then(|pointer| pointer.get_mut(&mut state.doc).ok())
             {
-                let option_count = state.nav_state.current.options.len();
+                if let Some(previous) = previous_path.parse::<ValuePointer>().ok().and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
+                    let option_count = state.nav_state.current.options.len();
 
-                let cur = state.nav_state.current.selected;
-                let new_selected = cur 
-                    .wrapping_add(1)
-                    .checked_rem_euclid(option_count)
-                    .unwrap_or_default();
+                    let cur = state.nav_state.current.selected;
+                    let new_selected = cur 
+                        .wrapping_add(1)
+                        .checked_rem_euclid(option_count)
+                        .unwrap_or_default();
 
-                match previous {
-                    &mut Value::Object(ref mut obj) => {
-                        obj.swap_indices(cur, new_selected);
-                        state.nav_state.current.options.swap(cur, new_selected);
-                    },
-                    &mut Value::Array(ref mut arr) => {
-                        arr.swap(cur, new_selected);
-                    },
-                    &mut (Value::Null |
-                    Value::Bool(_) |
-                    Value::String(_) |
-                    Value::Number(_)) => {},
+                    match previous {
+                        &mut Value::Object(ref mut obj) => {
+                            obj.swap_indices(cur, new_selected);
+                            state.nav_state.current.options.swap(cur, new_selected);
+                            state.undo_stack.push(state::UndoAction::SwapIndicies { 
+                                path: previous_path.clone(), 
+                                from: new_selected, 
+                                to: cur
+                            });
+                            state.redo_stack.clear();
+                        },
+                        &mut Value::Array(ref mut arr) => {
+                            arr.swap(cur, new_selected);
+                            state.undo_stack.push(state::UndoAction::SwapIndicies { 
+                                path: previous_path.clone(), 
+                                from: new_selected, 
+                                to: cur
+                            });
+                            state.redo_stack.clear();
+                        },
+                        &mut (Value::Null |
+                              Value::Bool(_) |
+                              Value::String(_) |
+                              Value::Number(_)) => {},
+                    }
+
+                    state.nav_state.current.selected = new_selected;
                 }
-
-                state.nav_state.current.selected = new_selected;
             }
 
             state
@@ -169,7 +193,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
         Action::NavGoto { path } => {
             let parts: Vec<_> = path.split('/').collect(); 
             
-            let mut history = vec![];
+            let mut history = Vec::with_capacity(parts.len());
             let mut current = Step {
                 options: vec![state::ROOT_PATH.to_owned()],
                 selected: 0,
@@ -270,11 +294,16 @@ pub fn reducer(mut state: State, action: Action) -> State {
                 .get(state.nav_state.current.selected)
             {
                 let existing = path
-                    .parse::<ValuePointer>()
-                    .ok()
+                    .parse::<ValuePointer>().ok()
                     .and_then(|pointer| pointer.get_mut(&mut state.doc).ok());
 
                 if let Some(existing) = existing {
+                    state.undo_stack.push(state::UndoAction::ReplaceCurrent { 
+                        path: path.clone(), 
+                        value: existing.clone() 
+                    });
+                    state.redo_stack.clear();
+
                     *existing = value;
                 }
             }
@@ -331,5 +360,139 @@ pub fn reducer(mut state: State, action: Action) -> State {
 
             state
         },
+        Action::Undo => {
+            if let Some(top) = state.undo_stack.pop() {
+                match top {
+                    state::UndoAction::ReplaceCurrent { path, value } => {
+                        if let Some(node) = path.parse::<ValuePointer>().ok()
+                            .and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
+                                state.redo_stack.push(state::UndoAction::ReplaceCurrent { path, value: node.clone() });
+
+                                *node = value;
+
+                                state.status.message = state::StatusMessage::Ok("Successfully undid value replacement".to_owned());
+                                state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
+                                    std::time::Instant::now().checked_add(dur)
+                                });
+                        } else {
+                            state.undo_stack.clear(); 
+                            state.redo_stack.clear();
+                            state.status.message = state::StatusMessage::Err("Corrupted undo stack, try reloading the document".to_owned());
+                            state.status.timeout = None;
+                        }
+                    },
+                    state::UndoAction::SwapIndicies { path, from, to } => {
+                        if let Some(node) = path.parse::<ValuePointer>().ok()
+                            .and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
+                                match node {
+                                    &mut Value::Array(ref mut arr) => {
+                                        state.redo_stack.push(state::UndoAction::SwapIndicies { path, from, to });
+
+                                        arr.swap(from, to);
+                                        state.status.message = state::StatusMessage::Ok("Successfully undid array index move".to_owned());
+                                        state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
+                                            std::time::Instant::now().checked_add(dur)
+                                        });
+                                    },
+                                    &mut Value::Object(ref mut obj) => {
+                                        state.redo_stack.push(state::UndoAction::SwapIndicies { path, from, to });
+
+                                        obj.swap_indices(from, to);
+                                        state.status.message = state::StatusMessage::Ok("Successfully undid object key move".to_owned());
+                                        state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
+                                            std::time::Instant::now().checked_add(dur)
+                                        });
+                                    },
+                                    &mut (Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_)) => {
+                                        state.undo_stack.clear(); 
+                                        state.redo_stack.clear();
+                                        state.status.message = state::StatusMessage::Err("Corrupted undo stack, try reloading the document".to_owned());
+                                        state.status.timeout = None;
+                                    },
+                                }
+                        } else {
+                            state.undo_stack.clear(); 
+                            state.redo_stack.clear();
+                            state.status.message = state::StatusMessage::Err("Corrupted undo stack, try reloading the document".to_owned());
+                            state.status.timeout = None;
+                        }
+                    },
+                }
+            } else {
+                state.status.message = state::StatusMessage::Warn("Nothing to undo".to_owned());
+                state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
+                    std::time::Instant::now().checked_add(dur)
+                });
+            }
+
+            state
+        }
+        Action::Redo => {
+            if let Some(top) = state.redo_stack.pop() {
+                match top {
+                    state::UndoAction::ReplaceCurrent { path, value } => {
+                        if let Some(node) = path.parse::<ValuePointer>().ok()
+                            .and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
+                                state.undo_stack.push(state::UndoAction::ReplaceCurrent { path, value: node.clone() });
+
+                                *node = value;
+
+                                state.status.message = state::StatusMessage::Ok("Successfully redid value replacement".to_owned());
+                                state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
+                                    std::time::Instant::now().checked_add(dur)
+                                });
+                        } else {
+                            state.undo_stack.clear();
+                            state.redo_stack.clear();
+                            state.status.message = state::StatusMessage::Err("Corrupted redo stack, try reloading the document".to_owned());
+                            state.status.timeout = None;
+                        }
+                    },
+                    state::UndoAction::SwapIndicies { path, from, to } => {
+                        if let Some(node) = path.parse::<ValuePointer>().ok()
+                            .and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
+                                match node {
+                                    &mut Value::Array(ref mut arr) => {
+                                        state.undo_stack.push(state::UndoAction::SwapIndicies { path, from, to });
+
+                                        arr.swap(from, to);
+                                        state.status.message = state::StatusMessage::Ok("Successfully redid array index move".to_owned());
+                                        state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
+                                            std::time::Instant::now().checked_add(dur)
+                                        });
+                                    },
+                                    &mut Value::Object(ref mut obj) => {
+                                        state.undo_stack.push(state::UndoAction::SwapIndicies { path, from, to });
+
+                                        obj.swap_indices(from, to);
+                                        state.status.message = state::StatusMessage::Ok("Successfully redid object key move".to_owned());
+                                        state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
+                                            std::time::Instant::now().checked_add(dur)
+                                        });
+                                    },
+                                    &mut (Value::Null | Value::Bool(_) | Value::Number(_) | Value::String(_)) => {
+                                        state.undo_stack.clear(); 
+                                        state.redo_stack.clear();
+                                        state.status.message = state::StatusMessage::Err("Corrupted redo stack, try reloading the document".to_owned());
+                                        state.status.timeout = None;
+                                    },
+                                }
+                        } else {
+                            state.undo_stack.clear(); 
+                            state.redo_stack.clear();
+                            state.status.message = state::StatusMessage::Err("Corrupted redo stack, try reloading the document".to_owned());
+                            state.status.timeout = None;
+                        }
+                    },
+                }
+            } else {
+                state.status.message = state::StatusMessage::Warn("Nothing to redo".to_owned());
+                state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
+                    std::time::Instant::now().checked_add(dur)
+                });
+            }
+
+            state
+        }
     }
 }

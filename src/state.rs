@@ -19,6 +19,12 @@ pub struct State {
     pub current_page: Page,
 
     ///
+    pub undo_stack: Vec<UndoAction>,
+
+    ///
+    pub redo_stack: Vec<UndoAction>,
+
+    ///
     pub nav_state: Nav,
 
     ///
@@ -32,6 +38,30 @@ pub struct State {
 
     ///
     pub status: Status,
+}
+
+///
+pub enum UndoAction {
+    ///
+    ReplaceCurrent {
+        /// 
+        path: String, 
+
+        ///
+        value: Value,
+    },
+
+    ///
+    SwapIndicies {
+        ///
+        path: String,
+
+        ///
+        from: usize,
+
+        ///
+        to: usize,
+    }
 }
 
 ///
@@ -66,6 +96,8 @@ impl State {
             file_name,
             doc,
             current_page: Page::Nav,
+            undo_stack: vec![],
+            redo_stack: vec![],
             nav_state: Nav {
                 current: Step {
                     selected: 0,
