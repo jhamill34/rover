@@ -1,6 +1,6 @@
 //!
 
-use crate::state::{Page, StatusMessage};
+use crate::{state::{Page, StatusMessage}, value::Value};
 
 ///
 #[non_exhaustive]
@@ -38,7 +38,7 @@ pub enum Action {
     ///
     DocumentReplaceCurrent { 
         ///
-        value: serde_json::Value 
+        value: Value 
     },
     
     ///

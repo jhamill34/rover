@@ -19,7 +19,7 @@ use tui::{
     Frame, Terminal,
 };
 
-use crate::state::{Page, State, Step};
+use crate::{state::{Page, State, Step}, pointer::ValuePointer};
 
 ///
 pub fn configure_terminal() -> anyhow::Result<Terminal<CrosstermBackend<io::Stdout>>> {
@@ -210,7 +210,7 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
             if let Some(selected_path) = selected_path {
                 let selected_path = selected_path
                     .strip_prefix('#')
-                    .and_then(|path| path.parse::<json_pointer::JsonPointer<_, _>>().ok())
+                    .and_then(|path| path.parse::<ValuePointer>().ok())
                     .and_then(|path| path.get(&state.doc).ok())
                     .and_then(|value| {
                         match extension.as_ref() {
@@ -413,7 +413,7 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
             if let Some(selected_path) = selected_path {
                 let selected_path = selected_path
                     .strip_prefix('#')
-                    .and_then(|path| path.parse::<json_pointer::JsonPointer<_, _>>().ok())
+                    .and_then(|path| path.parse::<ValuePointer>().ok())
                     .and_then(|path| path.get(&state.doc).ok())
                     .and_then(|value| {
                         match extension.as_ref() {

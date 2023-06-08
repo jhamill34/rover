@@ -2,6 +2,8 @@
 
 use std::collections::HashMap;
 
+use crate::value::Value;
+
 ///
 pub const ROOT_PATH: &str = "#";
 
@@ -10,10 +12,8 @@ pub struct State {
     ///
     pub file_name: String,
 
-    /// 
-    /// TODO: we need to implement our own data structure to 
-    ///  have control over the key ordering (like IndexMap)
-    pub doc: serde_json::Value,
+    ///
+    pub doc: Value,
 
     ///
     pub current_page: Page,
@@ -61,7 +61,7 @@ pub struct Status {
 
 impl State {
     ///
-    pub fn new(doc: serde_json::Value, file_name: String) -> Self {
+    pub fn new(doc: Value, file_name: String) -> Self {
         Self {
             file_name,
             doc,

@@ -10,8 +10,9 @@ use core::cmp;
 
 use std::{collections::HashMap, sync::Mutex};
 
-use json_pointer::JsonPointer;
 use lazy_static::lazy_static;
+
+use crate::{value::Value, pointer::ValuePointer};
 
 lazy_static!{ 
     static ref OPT: Mutex<Vec<i16>> = Mutex::new(vec![0_i16; 102_400]);
@@ -131,7 +132,7 @@ fn score(target: &str, query: &str, criteria: &ScoringCriteria, opt: &mut [i16])
 
 ///
 pub fn filter(
-    doc: &serde_json::Value, 
+    doc: &Value, 
     graph: &HashMap<String, usize>, 
     value: &str
 ) -> Vec<String> {
@@ -145,7 +146,7 @@ pub fn filter(
                 let mut key_score = score(key, value, &criteria, &mut opt);
 
                 if *children == 0 {
-                    let raw = key.parse::<JsonPointer<_, _>>().ok()
+                    let raw = key.parse::<ValuePointer>().ok()
                         .and_then(|path| path.get(doc).ok())
                         .and_then(|node| serde_json::to_string_pretty(&node).ok());
 

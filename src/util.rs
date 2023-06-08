@@ -10,8 +10,10 @@ use std::{
 
 use anyhow::{anyhow, bail};
 
+use crate::value::Value;
+
 ///
-pub fn fetch_document(file_name: &str) -> anyhow::Result<serde_json::Value> {
+pub fn fetch_document(file_name: &str) -> anyhow::Result<Value> {
     let doc = fs::read_to_string(file_name)?;
 
     let extention = PathBuf::from(file_name);
@@ -35,7 +37,7 @@ pub fn fetch_document(file_name: &str) -> anyhow::Result<serde_json::Value> {
 }
 
 ///
-pub fn save_doc(file_name: &str, value: &serde_json::Value) -> anyhow::Result<()> {
+pub fn save_doc(file_name: &str, value: &Value) -> anyhow::Result<()> {
     let mut path = PathBuf::from(file_name);
 
     let stem = path
@@ -63,7 +65,7 @@ pub fn save_doc(file_name: &str, value: &serde_json::Value) -> anyhow::Result<()
 }
 
 ///
-pub fn editor(value: &serde_json::Value, file_path: &str) -> anyhow::Result<serde_json::Value> {
+pub fn editor(value: &Value, file_path: &str) -> anyhow::Result<Value> {
     let editor = env::var("EDITOR")?;
     let mut temp_file_path = env::temp_dir();
 

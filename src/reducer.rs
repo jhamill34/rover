@@ -4,11 +4,9 @@
 
 use std::collections::HashMap;
 
-use json_pointer::JsonPointer;
-
 use crate::{
     action::Action,
-    state::{State, Step, self, ROOT_PATH}, search::filter,
+    state::{State, Step, self, ROOT_PATH}, search::filter, pointer::ValuePointer, value::Value,
 };
 
 ///
@@ -33,10 +31,10 @@ pub fn reducer(mut state: State, action: Action) -> State {
                 .options
                 .get(state.nav_state.current.selected)
             {
-                if let Some(selected) = selected_path.parse::<JsonPointer<_, _>>().ok().and_then(|pointer| pointer.get(&state.doc).ok()) {
+                if let Some(selected) = selected_path.parse::<ValuePointer>().ok().and_then(|pointer| pointer.get(&state.doc).ok()) {
                     let selected_children = match selected {
-                        &serde_json::Value::Object(ref map) => {
-                            if let Some(&serde_json::Value::String(ref value)) = map.get("$ref") {
+                        &Value::Object(ref map) => {
+                            if let Some(&Value::String(ref value)) = map.get("$ref") {
                                 vec![value.clone()]
                             } else {
                                 map.keys().map(|key| {
@@ -45,11 +43,11 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                 }).collect()
                             }
                         },
-                        &serde_json::Value::Array(ref array) => array.iter().enumerate().map(|(index, _)| format!("{selected_path}/{index}")).collect(),
-                        &serde_json::Value::Null |
-                            &serde_json::Value::Bool(_) |
-                            &serde_json::Value::Number(_) |
-                            &serde_json::Value::String(_) => vec![],
+                        &Value::Array(ref array) => array.iter().enumerate().map(|(index, _)| format!("{selected_path}/{index}")).collect(),
+                        &Value::Null |
+                            &Value::Bool(_) |
+                            &Value::Number(_) |
+                            &Value::String(_) => vec![],
                     };
 
                     if !selected_children.is_empty() {
@@ -121,12 +119,12 @@ pub fn reducer(mut state: State, action: Action) -> State {
                     .unwrap_or_default();
 
                 // Fake Select Step
-                let next_options = current_path.parse::<JsonPointer<_, _>>().ok()
+                let next_options = current_path.parse::<ValuePointer>().ok()
                     .and_then(|pointer| pointer.get(&state.doc).ok())
                     .map_or(vec![], |value| {
                         match value {
-                            &serde_json::Value::Object(ref map) => {
-                                if let Some(&serde_json::Value::String(ref value)) = map.get("$ref") {
+                            &Value::Object(ref map) => {
+                                if let Some(&Value::String(ref value)) = map.get("$ref") {
                                     vec![value.clone()]
                                 } else {
                                     map.keys().map(|key| {
@@ -135,11 +133,11 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                     }).collect()
                                 }
                             },
-                            &serde_json::Value::Array(ref array) => array.iter().enumerate().map(|(index, _)| format!("{current_path}/{index}")).collect(),
-                            &serde_json::Value::Null |
-                                &serde_json::Value::Bool(_) |
-                                &serde_json::Value::Number(_) |
-                                &serde_json::Value::String(_) => vec![],
+                            &Value::Array(ref array) => array.iter().enumerate().map(|(index, _)| format!("{current_path}/{index}")).collect(),
+                            &Value::Null |
+                                &Value::Bool(_) |
+                                &Value::Number(_) |
+                                &Value::String(_) => vec![],
 
                         }
                     });
@@ -202,7 +200,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                 .get(state.nav_state.current.selected)
             {
                 let existing = path
-                    .parse::<JsonPointer<_, _>>()
+                    .parse::<ValuePointer>()
                     .ok()
                     .and_then(|pointer| pointer.get_mut(&mut state.doc).ok());
 
@@ -233,7 +231,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
             while let Some((path, value)) = stack.pop() {
                 let mut child_count: usize = 0;
                 match value {
-                    &serde_json::Value::Object(ref map) => {
+                    &Value::Object(ref map) => {
                         if !map.contains_key("$ref") {
                             for (key, value) in map {
                                 let key = key.replace('/', "~1");
@@ -243,17 +241,17 @@ pub fn reducer(mut state: State, action: Action) -> State {
                             }
                         }
                     }
-                    &serde_json::Value::Array(ref array) => {
+                    &Value::Array(ref array) => {
                         for (index, value) in array.iter().enumerate() {
                             let path = format!("{path}/{index}");
                             stack.push((path, value));
                             child_count = child_count.saturating_add(1);
                         }
                     }
-                    &serde_json::Value::Null |
-                    &serde_json::Value::Bool(_) |
-                    &serde_json::Value::Number(_) |
-                    &serde_json::Value::String(_) => {},
+                    &Value::Null |
+                    &Value::Bool(_) |
+                    &Value::Number(_) |
+                    &Value::String(_) => {},
                 };
                 
                 paths.insert(path, child_count);

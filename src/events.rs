@@ -14,7 +14,6 @@ use std::{
 };
 
 use crossterm::event::{self, poll, Event, KeyCode, KeyEvent, KeyModifiers};
-use json_pointer::JsonPointer;
 use redux_rs::{Reducer, Store};
 use tui::backend::Backend;
 
@@ -22,7 +21,7 @@ use crate::{
     action::Action,
     lifecycle::Application,
     state::{Page, State, StatusMessage},
-    util::{editor, save_doc},
+    util::{editor, save_doc}, pointer::ValuePointer, value::Value,
 };
 
 ///
@@ -90,16 +89,16 @@ where
                                             .and_then(|path| {
                                                 path.strip_prefix('#')
                                                     .and_then(|path| {
-                                                        path.parse::<JsonPointer<_, _>>().ok()
+                                                        path.parse::<ValuePointer>().ok()
                                                             .and_then(|pointer| pointer.get(&state.doc).ok())
                                                             .map(|value| {
                                                                 match value {
-                                                                    &serde_json::Value::Array(ref arr) => arr.len(),
-                                                                    &serde_json::Value::Object(ref obj) => obj.len(),
-                                                                    &serde_json::Value::Null |
-                                                                    &serde_json::Value::Bool(_) |
-                                                                    &serde_json::Value::Number(_) |
-                                                                    &serde_json::Value::String(_) => 0 
+                                                                    &Value::Array(ref arr) => arr.len(),
+                                                                    &Value::Object(ref obj) => obj.len(),
+                                                                    &Value::Null |
+                                                                    &Value::Bool(_) |
+                                                                    &Value::Number(_) |
+                                                                    &Value::String(_) => 0 
                                                                 }
                                                             })
                                                     })
@@ -146,10 +145,10 @@ where
                                             .options
                                             .get(state.nav_state.current.selected)
                                             .and_then(|path| path.strip_prefix('#'))
-                                            .and_then(|path| path.parse::<JsonPointer<_, _>>().ok())
+                                            .and_then(|path| path.parse::<ValuePointer>().ok())
                                             .and_then(|path| path.get(&state.doc).ok())
                                             .cloned()
-                                            .unwrap_or(serde_json::Value::Null)
+                                            .unwrap_or(Value::Null)
                                     })
                                     .await;
                                 
@@ -392,10 +391,10 @@ where
                                             .options
                                             .get(state.nav_state.current.selected)
                                             .and_then(|path| path.strip_prefix('#'))
-                                            .and_then(|path| path.parse::<JsonPointer<_, _>>().ok())
+                                            .and_then(|path| path.parse::<ValuePointer>().ok())
                                             .and_then(|path| path.get(&state.doc).ok())
                                             .cloned()
-                                            .unwrap_or(serde_json::Value::Null)
+                                            .unwrap_or(Value::Null)
                                     })
                                     .await;
 

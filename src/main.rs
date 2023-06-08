@@ -38,6 +38,8 @@ mod state;
 mod ui;
 mod util;
 mod search;
+mod value;
+mod pointer;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
