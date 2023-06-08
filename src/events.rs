@@ -89,27 +89,27 @@ where
                             } => {
                                 let children = store
                                     .select(|state: &State| {
-                                        state
-                                            .nav_state
-                                            .current
-                                            .options
-                                            .get(state.nav_state.current.selected)
-                                            .and_then(|path| {
-                                                path.strip_prefix('#')
-                                                    .and_then(|path| {
-                                                        path.parse::<ValuePointer>().ok()
-                                                            .and_then(|pointer| pointer.get(&state.doc).ok())
-                                                            .map(|value| {
-                                                                match value {
-                                                                    &Value::Array(ref arr) => arr.len(),
-                                                                    &Value::Object(ref obj) => obj.len(),
-                                                                    &Value::Null |
-                                                                    &Value::Bool(_) |
-                                                                    &Value::Number(_) |
-                                                                    &Value::String(_) => 0 
-                                                                }
-                                                            })
-                                                    })
+                                        state.nav_state.current.path.parse::<ValuePointer>().ok()
+                                            .and_then(|pointer| pointer.get(&state.doc).ok())
+                                            .and_then(|value| {
+                                                match value {
+                                                    &Value::Array(ref arr) => arr.get(state.nav_state.current.selected),
+                                                    &Value::Object(ref obj) => obj.get_index(state.nav_state.current.selected).map(|(_, v)| v),
+                                                    &Value::Null |
+                                                    &Value::Bool(_) |
+                                                    &Value::String(_) |
+                                                    &Value::Number(_) => None
+                                                }
+                                            })
+                                            .map(|child| {
+                                                match child {
+                                                    &Value::Array(ref arr) => arr.len(),
+                                                    &Value::Object(ref obj) => obj.len(),
+                                                    &Value::Null |
+                                                    &Value::Bool(_) |
+                                                    &Value::String(_) |
+                                                    &Value::Number(_) => 0
+                                                }
                                             })
                                             .unwrap_or(0)
                                     })
@@ -159,14 +159,18 @@ where
                             } => {
                                 let existing_value = store
                                     .select(|state: &State| {
-                                        state
-                                            .nav_state
-                                            .current
-                                            .options
-                                            .get(state.nav_state.current.selected)
-                                            .and_then(|path| path.strip_prefix('#'))
-                                            .and_then(|path| path.parse::<ValuePointer>().ok())
-                                            .and_then(|path| path.get(&state.doc).ok())
+                                        state.nav_state.current.path.parse::<ValuePointer>().ok()
+                                            .and_then(|pointer| pointer.get(&state.doc).ok())
+                                            .and_then(|value| {
+                                                match value {
+                                                    &Value::Array(ref arr) => arr.get(state.nav_state.current.selected),
+                                                    &Value::Object(ref obj) => obj.get_index(state.nav_state.current.selected).map(|(_, v)| v),
+                                                    &Value::Null |
+                                                    &Value::Bool(_) |
+                                                    &Value::String(_) |
+                                                    &Value::Number(_) => None
+                                                }
+                                            })
                                             .cloned()
                                             .unwrap_or(Value::Null)
                                     })
@@ -405,14 +409,18 @@ where
                             KeyEvent { code: KeyCode::Enter, .. } => {
                                 let existing_value = store
                                     .select(|state: &State| {
-                                        state
-                                            .nav_state
-                                            .current
-                                            .options
-                                            .get(state.nav_state.current.selected)
-                                            .and_then(|path| path.strip_prefix('#'))
-                                            .and_then(|path| path.parse::<ValuePointer>().ok())
-                                            .and_then(|path| path.get(&state.doc).ok())
+                                        state.nav_state.current.path.parse::<ValuePointer>().ok()
+                                            .and_then(|pointer| pointer.get(&state.doc).ok())
+                                            .and_then(|value| {
+                                                match value {
+                                                    &Value::Array(ref arr) => arr.get(state.nav_state.current.selected),
+                                                    &Value::Object(ref obj) => obj.get_index(state.nav_state.current.selected).map(|(_, v)| v),
+                                                    &Value::Null |
+                                                    &Value::Bool(_) |
+                                                    &Value::String(_) |
+                                                    &Value::Number(_) => None
+                                                }
+                                            })
                                             .cloned()
                                             .unwrap_or(Value::Null)
                                     })

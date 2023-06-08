@@ -25,49 +25,57 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::NavSelect => {
-            if let Some(selected_path) = state
-                .nav_state
-                .current
-                .options
-                .get(state.nav_state.current.selected)
-            {
-                if let Some(selected) = selected_path.parse::<ValuePointer>().ok().and_then(|pointer| pointer.get(&state.doc).ok()) {
-                    let selected_children = match selected {
-                        &Value::Object(ref map) => {
-                            if let Some(&Value::String(ref value)) = map.get("$ref") {
-                                vec![value.clone()]
-                            } else {
-                                map.keys().map(|key| {
-                                    let key = key.replace('/', "~1");
-                                    format!("{selected_path}/{key}")
-                                }).collect()
-                            }
-                        },
-                        &Value::Array(ref array) => array.iter().enumerate().map(|(index, _)| format!("{selected_path}/{index}")).collect(),
-                        &Value::Null |
-                            &Value::Bool(_) |
-                            &Value::Number(_) |
-                            &Value::String(_) => vec![],
+            let selected_path = state.nav_state.current.path.clone();
+
+            if let Some(selected) = selected_path.parse::<ValuePointer>().ok().and_then(|pointer| pointer.get(&state.doc).ok()) {
+                let index = state.nav_state.current.selected;
+                let path = match selected {
+                    &Value::Object(ref map) => {
+                        map.get_index(index)
+                            .map(|(key, _)| {
+                                let key = key.replace('/', "~1");
+
+                                format!("{selected_path}/{key}")
+                            })
+                    }
+                    &Value::Array(_) => {
+                        Some(format!("{selected_path}/{index}"))
+                    }
+                    &Value::Null |
+                        &Value::Bool(_) |
+                        &Value::Number(_) |
+                        &Value::String(_) => None,
+                };
+
+                if let Some(path) = path {
+                    let mut step = Step {
+                        path,
+                        selected: 0,
                     };
 
-                    if !selected_children.is_empty() {
-                        let mut step = Step {
-                            options: selected_children,
-                            selected: 0,
-                        };
-
-                        core::mem::swap(&mut state.nav_state.current, &mut step);
-                        state.nav_state.history.push(step);
-                    }
+                    core::mem::swap(&mut state.nav_state.current, &mut step);
+                    state.nav_state.history.push(step);
                 }
             }
 
             state
         }
         Action::NavUp => {
-            let option_count = state.nav_state.current.options
-                .len()
+            let option_count = state.nav_state.current.path.parse::<ValuePointer>().ok()
+                .and_then(|pointer| pointer.get(&state.doc).ok())
+                .map_or(0, |value| {
+                    match value {
+                        &Value::Object(ref map) => map.len(),
+                        &Value::Array(ref array) => array.len(),
+                        &Value::Null |
+                            &Value::Bool(_) |
+                            &Value::Number(_) |
+                            &Value::String(_) => 0
+                    }
+
+                })
                 .saturating_sub(1);
+
             let new_selected = state.nav_state.current.selected
                 .checked_sub(1)
                 .unwrap_or(option_count);
@@ -77,55 +85,68 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::NavMoveUp => {
-            if let Some(previous_path) = state.nav_state.history.last()
-                .and_then(|step| step.options.get(step.selected))
-            {
-                if let Some(previous) = previous_path.parse::<ValuePointer>().ok().and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
-                    let option_count = state.nav_state.current.options
-                        .len()
-                        .saturating_sub(1);
+            if let Some(previous) = state.nav_state.current.path.parse::<ValuePointer>().ok().and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
+                let option_count = match previous {
+                    &mut Value::Object(ref map) => map.len(),
+                    &mut Value::Array(ref array) => array.len(),
+                    &mut (Value::Null |
+                        Value::Bool(_) |
+                        Value::Number(_) |
+                        Value::String(_)) => 0
+                    }.saturating_sub(1);
 
-                    let cur = state.nav_state.current.selected;
-                    let new_selected = cur
-                        .checked_sub(1)
-                        .unwrap_or(option_count);
+                let cur = state.nav_state.current.selected;
+                let new_selected = cur
+                    .checked_sub(1)
+                    .unwrap_or(option_count);
 
-                    match previous {
-                        &mut Value::Object(ref mut obj) => {
-                            obj.swap_indices(cur, new_selected);
-                            state.nav_state.current.options.swap(cur, new_selected);
-                            state.undo_stack.push(state::UndoAction::SwapIndicies { 
-                                path: previous_path.clone(), 
-                                from: new_selected, 
-                                to: cur
-                            });
-                            state.redo_stack.clear();
-                        },
-                        &mut Value::Array(ref mut arr) => {
-                            arr.swap(cur, new_selected);
-                            state.undo_stack.push(state::UndoAction::SwapIndicies { 
-                                path: previous_path.clone(), 
-                                from: new_selected, 
-                                to: cur
-                            });
-                            state.redo_stack.clear();
-                        },
-                        &mut (
-                            Value::Null |
-                            Value::Bool(_) |
-                            Value::Number(_) |
-                            Value::String(_)
-                            ) => {},
-                    }
-
-                    state.nav_state.current.selected = new_selected;
+                match previous {
+                    &mut Value::Object(ref mut obj) => {
+                        obj.swap_indices(cur, new_selected);
+                        state.undo_stack.push(state::UndoAction::SwapIndicies { 
+                            path: state.nav_state.current.path.clone(), 
+                            from: new_selected, 
+                            to: cur
+                        });
+                        state.redo_stack.clear();
+                    },
+                    &mut Value::Array(ref mut arr) => {
+                        arr.swap(cur, new_selected);
+                        state.undo_stack.push(state::UndoAction::SwapIndicies { 
+                            path: state.nav_state.current.path.clone(), 
+                            from: new_selected, 
+                            to: cur
+                        });
+                        state.redo_stack.clear();
+                    },
+                    &mut (
+                        Value::Null |
+                        Value::Bool(_) |
+                        Value::Number(_) |
+                        Value::String(_)
+                        ) => {},
                 }
+
+                state.nav_state.current.selected = new_selected;
             }
 
             state
         }
         Action::NavDown => {
-            let option_count = state.nav_state.current.options.len();
+            let option_count = state.nav_state.current.path.parse::<ValuePointer>().ok()
+                .and_then(|pointer| pointer.get(&state.doc).ok())
+                .map_or(0, |value| {
+                    match value {
+                        &Value::Object(ref map) => map.len(),
+                        &Value::Array(ref array) => array.len(),
+                        &Value::Null |
+                            &Value::Bool(_) |
+                            &Value::Number(_) |
+                            &Value::String(_) => 0
+                    }
+
+                });
+
             let new_selected = state.nav_state.current.selected
                 .wrapping_add(1)
                 .checked_rem_euclid(option_count)
@@ -136,46 +157,48 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::NavMoveDown => {
-            if let Some(previous_path) = state.nav_state.history.last()
-                .and_then(|step| step.options.get(step.selected))
-            {
-                if let Some(previous) = previous_path.parse::<ValuePointer>().ok().and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
-                    let option_count = state.nav_state.current.options.len();
+            if let Some(previous) = state.nav_state.current.path.parse::<ValuePointer>().ok().and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
+                let option_count = match previous {
+                    &mut Value::Object(ref map) => map.len(),
+                    &mut Value::Array(ref array) => array.len(),
+                    &mut (Value::Null |
+                        Value::Bool(_) |
+                        Value::Number(_) |
+                        Value::String(_)) => 0
+                    };
 
-                    let cur = state.nav_state.current.selected;
-                    let new_selected = cur 
-                        .wrapping_add(1)
-                        .checked_rem_euclid(option_count)
-                        .unwrap_or_default();
+                let cur = state.nav_state.current.selected;
+                let new_selected = cur 
+                    .wrapping_add(1)
+                    .checked_rem_euclid(option_count)
+                    .unwrap_or_default();
 
-                    match previous {
-                        &mut Value::Object(ref mut obj) => {
-                            obj.swap_indices(cur, new_selected);
-                            state.nav_state.current.options.swap(cur, new_selected);
-                            state.undo_stack.push(state::UndoAction::SwapIndicies { 
-                                path: previous_path.clone(), 
-                                from: new_selected, 
-                                to: cur
-                            });
-                            state.redo_stack.clear();
-                        },
-                        &mut Value::Array(ref mut arr) => {
-                            arr.swap(cur, new_selected);
-                            state.undo_stack.push(state::UndoAction::SwapIndicies { 
-                                path: previous_path.clone(), 
-                                from: new_selected, 
-                                to: cur
-                            });
-                            state.redo_stack.clear();
-                        },
-                        &mut (Value::Null |
-                              Value::Bool(_) |
-                              Value::String(_) |
-                              Value::Number(_)) => {},
-                    }
-
-                    state.nav_state.current.selected = new_selected;
+                match previous {
+                    &mut Value::Object(ref mut obj) => {
+                        obj.swap_indices(cur, new_selected);
+                        state.undo_stack.push(state::UndoAction::SwapIndicies { 
+                            path: state.nav_state.current.path.clone(), 
+                            from: new_selected, 
+                            to: cur
+                        });
+                        state.redo_stack.clear();
+                    },
+                    &mut Value::Array(ref mut arr) => {
+                        arr.swap(cur, new_selected);
+                        state.undo_stack.push(state::UndoAction::SwapIndicies { 
+                            path: state.nav_state.current.path.clone(), 
+                            from: new_selected, 
+                            to: cur
+                        });
+                        state.redo_stack.clear();
+                    },
+                    &mut (Value::Null |
+                          Value::Bool(_) |
+                          Value::String(_) |
+                          Value::Number(_)) => {},
                 }
+
+                state.nav_state.current.selected = new_selected;
             }
 
             state
@@ -185,73 +208,86 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::NavBottom => {
-            let option_count = state.nav_state.current.options.len();
+            let option_count = state.nav_state.current.path.parse::<ValuePointer>().ok()
+                .and_then(|pointer| pointer.get(&state.doc).ok())
+                .map_or(0, |value| {
+                    match value {
+                        &Value::Object(ref map) => map.len(),
+                        &Value::Array(ref array) => array.len(),
+                        &Value::Null |
+                            &Value::Bool(_) |
+                            &Value::Number(_) |
+                            &Value::String(_) => 0
+                    }
+
+                });
+
             state.nav_state.current.selected = option_count.saturating_sub(1);
 
             state
         }
         Action::NavGoto { path } => {
-            let parts: Vec<_> = path.split('/').collect(); 
-            
-            let mut history = Vec::with_capacity(parts.len());
-            let mut current = Step {
-                options: vec![state::ROOT_PATH.to_owned()],
-                selected: 0,
-            };
-            let mut current_path = String::new();
+            // let parts: Vec<_> = path.split('/').collect(); 
+            // 
+            // let mut history = Vec::with_capacity(parts.len());
+            // let mut current = Step {
+            //     options: vec![state::ROOT_PATH.to_owned()],
+            //     selected: 0,
+            // };
+            // let mut current_path = String::new();
 
-            for part in parts {
-                if !current_path.is_empty() {
-                    current_path.push('/');
-                }
-                current_path.push_str(part);
+            // for part in parts {
+            //     if !current_path.is_empty() {
+            //         current_path.push('/');
+            //     }
+            //     current_path.push_str(part);
 
-                // Fake Move Up/Down
-                current.selected = current.options
-                    .iter()
-                    .position(|opt| *opt == current_path)
-                    .unwrap_or_default();
+            //     // Fake Move Up/Down
+            //     current.selected = current.options
+            //         .iter()
+            //         .position(|opt| *opt == current_path)
+            //         .unwrap_or_default();
 
-                // Fake Select Step
-                let next_options = current_path.parse::<ValuePointer>().ok()
-                    .and_then(|pointer| pointer.get(&state.doc).ok())
-                    .map_or(vec![], |value| {
-                        match value {
-                            &Value::Object(ref map) => {
-                                if let Some(&Value::String(ref value)) = map.get("$ref") {
-                                    vec![value.clone()]
-                                } else {
-                                    map.keys().map(|key| {
-                                        let key = key.replace('/', "~1");
-                                        format!("{current_path}/{key}")
-                                    }).collect()
-                                }
-                            },
-                            &Value::Array(ref array) => array.iter().enumerate().map(|(index, _)| format!("{current_path}/{index}")).collect(),
-                            &Value::Null |
-                                &Value::Bool(_) |
-                                &Value::Number(_) |
-                                &Value::String(_) => vec![],
+            //     // Fake Select Step
+            //     let next_options = current_path.parse::<ValuePointer>().ok()
+            //         .and_then(|pointer| pointer.get(&state.doc).ok())
+            //         .map_or(vec![], |value| {
+            //             match value {
+            //                 &Value::Object(ref map) => {
+            //                     if let Some(&Value::String(ref value)) = map.get("$ref") {
+            //                         vec![value.clone()]
+            //                     } else {
+            //                         map.keys().map(|key| {
+            //                             let key = key.replace('/', "~1");
+            //                             format!("{current_path}/{key}")
+            //                         }).collect()
+            //                     }
+            //                 },
+            //                 &Value::Array(ref array) => array.iter().enumerate().map(|(index, _)| format!("{current_path}/{index}")).collect(),
+            //                 &Value::Null |
+            //                     &Value::Bool(_) |
+            //                     &Value::Number(_) |
+            //                     &Value::String(_) => vec![],
 
-                        }
-                    });
+            //             }
+            //         });
 
-                if next_options.is_empty() {
-                    break;
-                }
+            //     if next_options.is_empty() {
+            //         break;
+            //     }
 
-                let mut next_step = Step {
-                    selected: 0,
-                    options: next_options,
-                };
+            //     let mut next_step = Step {
+            //         selected: 0,
+            //         options: next_options,
+            //     };
 
-                core::mem::swap(&mut current, &mut next_step);
+            //     core::mem::swap(&mut current, &mut next_step);
 
-                history.push(next_step);
-            }
+            //     history.push(next_step);
+            // }
 
-            state.nav_state.current = current;
-            state.nav_state.history = history;
+            // state.nav_state.current = current;
+            // state.nav_state.history = history;
 
             state
         }
@@ -287,19 +323,26 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::DocumentReplaceCurrent { value } => {
-            if let Some(path) = state
-                .nav_state
-                .current
-                .options
-                .get(state.nav_state.current.selected)
-            {
-                let existing = path
-                    .parse::<ValuePointer>().ok()
-                    .and_then(|pointer| pointer.get_mut(&mut state.doc).ok());
+            let existing = state.nav_state.current.path
+                .parse::<ValuePointer>().ok()
+                .and_then(|pointer| pointer.get_mut(&mut state.doc).ok());
 
-                if let Some(existing) = existing {
+            if let Some(existing) = existing {
+                let existing = match existing {
+                    &mut Value::Object(ref mut map) => map.get_index_mut(state.nav_state.current.selected).map(|(k, v)| (format!("{}/{k}", state.nav_state.current.path), v)),
+                    &mut Value::Array(ref mut arr) => arr.get_mut(state.nav_state.current.selected).map(|v| (format!("{}/{}", state.nav_state.current.path, state.nav_state.current.selected), v)),
+                    &mut (Value::Null |
+                          Value::Bool(_) |
+                          Value::String(_) |
+                          Value::Number(_)) => {
+                        None
+                    },
+                };
+
+
+                if let Some((path, existing)) = existing {
                     state.undo_stack.push(state::UndoAction::ReplaceCurrent { 
-                        path: path.clone(), 
+                        path, 
                         value: existing.clone() 
                     });
                     state.redo_stack.clear();

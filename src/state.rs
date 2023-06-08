@@ -101,7 +101,7 @@ impl State {
             nav_state: Nav {
                 current: Step {
                     selected: 0,
-                    options: vec![ROOT_PATH.to_owned()],
+                    path: ROOT_PATH.to_string(),
                 },
                 history: vec![],
             },
@@ -128,7 +128,7 @@ impl State {
 ///
 pub struct Step {
     ///
-    pub options: Vec<String>,
+    pub path: String,
 
     ///
     pub selected: usize,

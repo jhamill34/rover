@@ -1,3 +1,2 @@
 - [ ] Mark what has been edited
-- [ ] Undo operations (edit log?)
 - [ ] LOGGING!!!

@@ -19,7 +19,7 @@ use tui::{
     Frame, Terminal,
 };
 
-use crate::{state::{Page, State, Step}, pointer::ValuePointer};
+use crate::{state::{Page, State, Step}, pointer::ValuePointer, value::Value};
 
 ///
 pub fn configure_terminal() -> anyhow::Result<Terminal<CrosstermBackend<io::Stdout>>> {
@@ -182,7 +182,7 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
         if let Some(rect) = chunks.next() {
             let previous = Block::default().title("Previous").borders(Borders::ALL);
             if let Some(prev) = state.nav_state.history.last() {
-                let (list, mut state) = step_list(prev, previous);
+                let (list, mut state) = step_list(prev, &state.doc, previous);
                 frame.render_stateful_widget(list, rect, &mut state);
             } else {
                 frame.render_widget(previous, rect);
@@ -191,7 +191,7 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
 
         if let Some(rect) = chunks.next() {
             let current = Block::default().title("Current").borders(Borders::ALL);
-            let (current, mut current_state) = step_list(&state.nav_state.current, current);
+            let (current, mut current_state) = step_list(&state.nav_state.current, &state.doc, current);
             frame.render_stateful_widget(current, rect, &mut current_state);
         }
 
@@ -199,8 +199,8 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
             let selected_path = state
                 .nav_state
                 .current
-                .options
-                .get(state.nav_state.current.selected);
+                .path.parse::<ValuePointer>().ok()
+                .and_then(|path| path.get(&state.doc).ok());
 
             let extension = PathBuf::from(&state.file_name);
             let extension = extension
@@ -208,10 +208,15 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 .map_or(Cow::Borrowed("json"), OsStr::to_string_lossy);
 
             if let Some(selected_path) = selected_path {
+                let selected_path = match selected_path {
+                    &Value::Array(ref array) => array.get(state.nav_state.current.selected),
+                    &Value::Object(ref object) => object.get_index(state.nav_state.current.selected).map(|(_, value)| value),
+                    &Value::Null |
+                    &Value::Bool(_) |
+                    &Value::String(_) |
+                    &Value::Number(_) => None
+                };
                 let selected_path = selected_path
-                    .strip_prefix('#')
-                    .and_then(|path| path.parse::<ValuePointer>().ok())
-                    .and_then(|path| path.get(&state.doc).ok())
                     .and_then(|value| {
                         match extension.as_ref() {
                             "yaml" | "yml" => serde_yaml::to_string(value).ok(),
@@ -219,6 +224,7 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
                             _ => None
                         }
                     });
+
                 if let Some(selected_path) = selected_path {
                     let text: Vec<Spans> = selected_path
                         .split('\n')
@@ -283,28 +289,29 @@ fn status<'status>(state: &State) -> Paragraph<'status> {
 fn current_path<'path>(state: &State) -> Paragraph<'path> {
     let location = Block::default().title("Location").borders(Borders::ALL);
 
-    let current_path = state
-        .nav_state
-        .current
-        .options
-        .get(state.nav_state.current.selected)
-        .cloned()
-        .unwrap_or_default();
-    Paragraph::new(Text::raw(current_path)).block(location)
+    Paragraph::new(Text::raw(state.nav_state.current.path.clone())).block(location)
 }
 
 ///
-fn step_list<'list>(step: &Step, parent: Block<'list>) -> (List<'list>, ListState) {
+fn step_list<'list>(step: &Step, doc: &Value, parent: Block<'list>) -> (List<'list>, ListState) {
     let prev_items: Vec<ListItem> = step 
-        .options
-        .iter()
-        .filter_map(|opt| {
-            opt.split('/')
-                .last()
-                .map(|name| name.replace("~1", "/"))
-                .map(|name| ListItem::new(Text::raw(name)))
+        .path.parse::<ValuePointer>().ok()
+        .and_then(|pointer| pointer.get(doc).ok())
+        .map(|value| {
+            match value {
+                &Value::Array(ref array) => array.iter().enumerate().map(|(i, _)| i.to_string()).collect(),
+                &Value::Object(ref object) => object.keys().cloned().collect(),
+                &Value::Null |
+                &Value::Bool(_) |
+                &Value::String(_) |
+                &Value::Number(_) => vec![]
+            }
         })
-    .collect();
+        .map(|name| {
+            name.into_iter().map(|name| {
+                ListItem::new(Text::raw(name))
+            }).collect()
+        }).unwrap_or_default();
 
     let mut prev_items_state = ListState::default();
     prev_items_state.select(Some(step.selected));
