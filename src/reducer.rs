@@ -76,6 +76,42 @@ pub fn reducer(mut state: State, action: Action) -> State {
 
             state
         }
+        Action::NavMoveUp => {
+            if let Some(previous) = state.nav_state.history.last()
+                .and_then(|step| step.options.get(step.selected))
+                .and_then(|path| path.parse::<ValuePointer>().ok())
+                .and_then(|pointer| pointer.get_mut(&mut state.doc).ok())
+            {
+                let option_count = state.nav_state.current.options
+                    .len()
+                    .saturating_sub(1);
+
+                let cur = state.nav_state.current.selected;
+                let new_selected = cur
+                    .checked_sub(1)
+                    .unwrap_or(option_count);
+
+                match previous {
+                    &mut Value::Object(ref mut obj) => {
+                        obj.swap_indices(cur, new_selected);
+                        state.nav_state.current.options.swap(cur, new_selected);
+                    },
+                    &mut Value::Array(ref mut arr) => {
+                        arr.swap(cur, new_selected);
+                    },
+                    &mut (
+                        Value::Null |
+                        Value::Bool(_) |
+                        Value::Number(_) |
+                        Value::String(_)
+                    ) => {},
+                }
+
+                state.nav_state.current.selected = new_selected;
+            }
+
+            state
+        }
         Action::NavDown => {
             let option_count = state.nav_state.current.options.len();
             let new_selected = state.nav_state.current.selected
@@ -87,6 +123,39 @@ pub fn reducer(mut state: State, action: Action) -> State {
 
             state
         }
+        Action::NavMoveDown => {
+            if let Some(previous) = state.nav_state.history.last()
+                .and_then(|step| step.options.get(step.selected))
+                .and_then(|path| path.parse::<ValuePointer>().ok())
+                .and_then(|pointer| pointer.get_mut(&mut state.doc).ok())
+            {
+                let option_count = state.nav_state.current.options.len();
+
+                let cur = state.nav_state.current.selected;
+                let new_selected = cur 
+                    .wrapping_add(1)
+                    .checked_rem_euclid(option_count)
+                    .unwrap_or_default();
+
+                match previous {
+                    &mut Value::Object(ref mut obj) => {
+                        obj.swap_indices(cur, new_selected);
+                        state.nav_state.current.options.swap(cur, new_selected);
+                    },
+                    &mut Value::Array(ref mut arr) => {
+                        arr.swap(cur, new_selected);
+                    },
+                    &mut (Value::Null |
+                    Value::Bool(_) |
+                    Value::String(_) |
+                    Value::Number(_)) => {},
+                }
+
+                state.nav_state.current.selected = new_selected;
+            }
+
+            state
+        }
         Action::NavTop => {
             state.nav_state.current.selected = 0;
             state
@@ -94,6 +163,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
         Action::NavBottom => {
             let option_count = state.nav_state.current.options.len();
             state.nav_state.current.selected = option_count.saturating_sub(1);
+
             state
         }
         Action::NavGoto { path } => {

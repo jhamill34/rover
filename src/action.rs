@@ -24,6 +24,12 @@ pub enum Action {
     NavDown,
 
     ///
+    NavMoveDown,
+
+    ///
+    NavMoveUp,
+
+    ///
     NavTop,
 
     ///

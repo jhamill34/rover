@@ -64,19 +64,27 @@ where
                     if let Event::Key(key) = read_event {
                         match key {
                             KeyEvent {
-                                code: KeyCode::Char('h'),
+                                code: KeyCode::Char('h') | KeyCode::Backspace | KeyCode::Left,
                                 ..
                             } => store.dispatch(Action::NavBack).await,
                             KeyEvent {
-                                code: KeyCode::Char('j'),
+                                code: KeyCode::Char('j') | KeyCode::Down,
                                 ..
                             } => store.dispatch(Action::NavDown).await,
                             KeyEvent {
-                                code: KeyCode::Char('k'),
+                                code: KeyCode::Char('J'),
+                                ..
+                            } => store.dispatch(Action::NavMoveDown).await,
+                            KeyEvent {
+                                code: KeyCode::Char('k') | KeyCode::Up,
                                 ..
                             } => store.dispatch(Action::NavUp).await,
                             KeyEvent {
-                                code: KeyCode::Char('l') | KeyCode::Enter,
+                                code: KeyCode::Char('K'),
+                                ..
+                            } => store.dispatch(Action::NavMoveUp).await,
+                            KeyEvent {
+                                code: KeyCode::Char('l') | KeyCode::Enter | KeyCode::Right,
                                 ..
                             } => {
                                 let children = store
@@ -530,14 +538,14 @@ where
                                 code: KeyCode::Char('n'),
                                 modifiers: KeyModifiers::CONTROL,
                                 ..
-                            } => {
+                            } | KeyEvent { code: KeyCode::Down, .. } => {
                                 store.dispatch(Action::SearchDown).await;
                             }
                             KeyEvent {
                                 code: KeyCode::Char('p'),
                                 modifiers: KeyModifiers::CONTROL,
                                 ..
-                            } => {
+                            } | KeyEvent { code: KeyCode::Up, .. } => {
                                 store.dispatch(Action::SearchUp).await;
                             }
                             KeyEvent {
