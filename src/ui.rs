@@ -85,10 +85,15 @@ pub fn import_prompt<B: Backend>(frame: &mut Frame<B>, state: &State) {
                         .add_modifier(Modifier::BOLD)
                         .fg(Color::White),
                 )),
-                Spans::from(Span::styled(
-                    format!(" > {}", state.import_prompt_state.value),
-                    Style::default().fg(Color::White),
-                )),
+                Spans::from(vec![
+                    Span::raw(" > "),
+                    Span::raw(state.import_prompt_state.value.clone()),
+                    Span::styled(
+                        "_",
+                        Style::default()
+                        .bg(Color::White)
+                    ),
+                ])
             ]))
             .block(prompt);
 
@@ -136,10 +141,15 @@ pub fn export_prompt<B: Backend>(frame: &mut Frame<B>, state: &State) {
                         .add_modifier(Modifier::BOLD)
                         .fg(Color::White),
                 )),
-                Spans::from(Span::styled(
-                    format!(" > {}", state.export_prompt_state.value),
-                    Style::default().fg(Color::White),
-                )),
+                Spans::from(vec![
+                    Span::raw(" > "),
+                    Span::raw(state.export_prompt_state.value.clone()),
+                    Span::styled(
+                        "_",
+                        Style::default()
+                        .bg(Color::White)
+                    ),
+                ])
             ]))
             .block(prompt);
 
@@ -351,7 +361,15 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
 
     if let Some(rect) = chunks.next() {
         let input = Block::default().title("Input").borders(Borders::ALL);
-        let input_text = Text::raw(state.search_state.value.clone());
+        let input_text = Spans::from(vec![
+            Span::raw(" > "),
+            Span::raw(state.search_state.value.clone()),
+            Span::styled(
+                "_",
+                Style::default()
+                    .bg(Color::White)
+            ),
+        ]);
         let input_paragraph = Paragraph::new(input_text).block(input);
         frame.render_widget(input_paragraph, rect);
     }
