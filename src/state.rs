@@ -101,7 +101,7 @@ impl State {
             nav_state: Nav {
                 current: Step {
                     selected: 0,
-                    path: ROOT_PATH.to_string(),
+                    path: ROOT_PATH.to_owned(),
                 },
                 history: vec![],
             },

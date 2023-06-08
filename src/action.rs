@@ -52,6 +52,9 @@ pub enum Action {
 
     ///
     Redo,
+
+    ///
+    Snapshot,
     
     ///
     SearchUp,

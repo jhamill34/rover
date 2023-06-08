@@ -101,7 +101,7 @@ where
                                                     &Value::Number(_) => None
                                                 }
                                             })
-                                            .map(|child| {
+                                            .map_or(0, |child| {
                                                 match child {
                                                     &Value::Array(ref arr) => arr.len(),
                                                     &Value::Object(ref obj) => obj.len(),
@@ -111,7 +111,6 @@ where
                                                     &Value::Number(_) => 0
                                                 }
                                             })
-                                            .unwrap_or(0)
                                     })
                                     .await;
 
@@ -217,6 +216,7 @@ where
 
                                 match result {
                                     Ok(_) => {
+                                        store.dispatch(Action::Snapshot).await;
                                         store.dispatch(Action::SetStatus { 
                                             message: StatusMessage::Ok("Successfully saved file".to_owned()), 
                                             timeout: Some(Duration::from_secs(2)) 
@@ -248,25 +248,50 @@ where
                                     .await;
                             }
                             KeyEvent {
+                                code: KeyCode::Char('q'),
+                                modifiers: KeyModifiers::CONTROL,
+                                ..
+                            } => {
+                                return Ok(())
+                            }
+                            KeyEvent {
                                 code: KeyCode::Char('q') | KeyCode::Esc,
                                 ..
-                            } => return Ok(()),
+                            } => {
+                                let undo_length = store.select(|state: &State| state.undo_stack.len()).await;
+
+                                if undo_length == 0 {
+                                    return Ok(())
+                                }
+
+                                store.dispatch(Action::SetStatus { 
+                                    message: StatusMessage::Warn("Unsaved changes, press ^q to quit without saving".to_owned()), 
+                                    timeout: Some(Duration::from_secs(2)), 
+                                }).await;
+                            },
                             KeyEvent {
                                 code: KeyCode::Char('c'),
                                 modifiers: KeyModifiers::CONTROL,
                                 ..
                             } => {
-                                // TODO: Show warning if changes have been made before exiting
-                                
                                 let empty_status = store.select(|state: &State| matches!(state.status.message, StatusMessage::Empty)).await;
+                                let undo_length = store.select(|state: &State| state.undo_stack.len()).await;
                                 if empty_status {
-                                    return Ok(())
+                                    if undo_length == 0 {
+                                        return Ok(())
+                                    }
+
+                                    store.dispatch(Action::SetStatus { 
+                                    message: StatusMessage::Warn("Unsaved changes, press ^q to quit without saving".to_owned()), 
+                                        timeout: Some(Duration::from_secs(2)), 
+                                    }).await;
+                                } else {
+                                    store.dispatch(Action::SetStatus { 
+                                        message: StatusMessage::Empty, 
+                                        timeout: None,
+                                    }).await;
                                 }
 
-                                store.dispatch(Action::SetStatus { 
-                                    message: StatusMessage::Empty, 
-                                    timeout: None,
-                                }).await;
                             },
                             _ => {}
                         }

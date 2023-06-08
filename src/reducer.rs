@@ -590,5 +590,11 @@ pub fn reducer(mut state: State, action: Action) -> State {
 
             state
         }
+        Action::Snapshot => {
+            state.undo_stack.clear();
+            state.redo_stack.clear();
+
+            state
+        }
     }
 }
