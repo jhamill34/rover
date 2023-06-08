@@ -227,67 +227,72 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::NavGoto { path } => {
-            // let parts: Vec<_> = path.split('/').collect(); 
-            // 
-            // let mut history = Vec::with_capacity(parts.len());
-            // let mut current = Step {
-            //     options: vec![state::ROOT_PATH.to_owned()],
-            //     selected: 0,
-            // };
-            // let mut current_path = String::new();
+            let parts: Vec<_> = path.strip_prefix(ROOT_PATH)
+                .unwrap_or(&path)
+                .split('/')
+                .filter(|part| !part.is_empty())
+                .collect(); 
+            
+            let mut history = Vec::with_capacity(parts.len());
+            let mut current = Step {
+                path: state::ROOT_PATH.to_owned(),
+                selected: 0,
+            };
+            let mut current_path = ROOT_PATH.to_owned();
+            let mut current_value = &state.doc;
 
-            // for part in parts {
-            //     if !current_path.is_empty() {
-            //         current_path.push('/');
-            //     }
-            //     current_path.push_str(part);
+            for part in parts {
+                if !current_path.is_empty() {
+                    current_path.push('/');
+                }
+                current_path.push_str(part);
 
-            //     // Fake Move Up/Down
-            //     current.selected = current.options
-            //         .iter()
-            //         .position(|opt| *opt == current_path)
-            //         .unwrap_or_default();
+                let child = match current_value {
+                    &Value::Array(ref array) => {
+                        let index = part.parse::<usize>().unwrap_or_default();
+                        array.get(index).map(|v| (index, v))
+                    },
+                    &Value::Object(ref obj) => {
+                        let key = part.replace("~1", "/");
+                        obj.get_full(&key).map(|(idx, _, value)| (idx, value))
+                    },
+                    &Value::Null |
+                    &Value::Bool(_) |
+                    &Value::String(_) |
+                    &Value::Number(_) => {
+                        None
+                    },
+                };
 
-            //     // Fake Select Step
-            //     let next_options = current_path.parse::<ValuePointer>().ok()
-            //         .and_then(|pointer| pointer.get(&state.doc).ok())
-            //         .map_or(vec![], |value| {
-            //             match value {
-            //                 &Value::Object(ref map) => {
-            //                     if let Some(&Value::String(ref value)) = map.get("$ref") {
-            //                         vec![value.clone()]
-            //                     } else {
-            //                         map.keys().map(|key| {
-            //                             let key = key.replace('/', "~1");
-            //                             format!("{current_path}/{key}")
-            //                         }).collect()
-            //                     }
-            //                 },
-            //                 &Value::Array(ref array) => array.iter().enumerate().map(|(index, _)| format!("{current_path}/{index}")).collect(),
-            //                 &Value::Null |
-            //                     &Value::Bool(_) |
-            //                     &Value::Number(_) |
-            //                     &Value::String(_) => vec![],
+                current_value = if let Some((index, child)) = child {
+                    current.selected = index;
+                    match child {
+                        &(Value::Array(_) | Value::Object(_)) => {
+                            let mut next_step = Step {
+                                path: current_path.clone(),
+                                selected: 0,
+                            };
 
-            //             }
-            //         });
+                            core::mem::swap(&mut current, &mut next_step);
 
-            //     if next_options.is_empty() {
-            //         break;
-            //     }
+                            history.push(next_step);
+                            child
+                        }
+                        &(Value::Null |
+                        Value::Bool(_) |
+                        Value::String(_) |
+                        Value::Number(_)) => {
+                            break;
+                        },
+                    }
+                } else {
+                    break;
+                };
 
-            //     let mut next_step = Step {
-            //         selected: 0,
-            //         options: next_options,
-            //     };
+            }
 
-            //     core::mem::swap(&mut current, &mut next_step);
-
-            //     history.push(next_step);
-            // }
-
-            // state.nav_state.current = current;
-            // state.nav_state.history = history;
+            state.nav_state.current = current;
+            state.nav_state.history = history;
 
             state
         }
@@ -407,13 +412,17 @@ pub fn reducer(mut state: State, action: Action) -> State {
             if let Some(top) = state.undo_stack.pop() {
                 match top {
                     state::UndoAction::ReplaceCurrent { path, value } => {
-                        if let Some(node) = path.parse::<ValuePointer>().ok()
+                        if state.nav_state.current.path.starts_with(&path) {
+                            state.status.message = state::StatusMessage::Err(format!("Unsafe undo operation, your current location might get overwritten by changing {path}"));
+                            state.status.timeout = None;
+                            state.undo_stack.push(state::UndoAction::ReplaceCurrent { path, value });
+                        } else if let Some(node) = path.parse::<ValuePointer>().ok()
                             .and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
-                                state.redo_stack.push(state::UndoAction::ReplaceCurrent { path, value: node.clone() });
+                                state.redo_stack.push(state::UndoAction::ReplaceCurrent { path: path.clone(), value: node.clone() });
 
                                 *node = value;
 
-                                state.status.message = state::StatusMessage::Ok("Successfully undid value replacement".to_owned());
+                                state.status.message = state::StatusMessage::Ok(format!("Successful undo value replacement at {path}"));
                                 state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
                                     std::time::Instant::now().checked_add(dur)
                                 });
@@ -429,19 +438,39 @@ pub fn reducer(mut state: State, action: Action) -> State {
                             .and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
                                 match node {
                                     &mut Value::Array(ref mut arr) => {
-                                        state.redo_stack.push(state::UndoAction::SwapIndicies { path, from, to });
+                                        for step in &mut state.nav_state.history {
+                                            if step.path == path {
+                                                if step.selected == from {
+                                                    step.selected = to;
+                                                } else if step.selected == to {
+                                                    step.selected = from;
+                                                } else {}
+                                            }
+                                        }
+
+                                        state.redo_stack.push(state::UndoAction::SwapIndicies { path: path.clone(), from, to });
 
                                         arr.swap(from, to);
-                                        state.status.message = state::StatusMessage::Ok("Successfully undid array index move".to_owned());
+                                        state.status.message = state::StatusMessage::Ok(format!("Successful undo array move at {path}"));
                                         state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
                                             std::time::Instant::now().checked_add(dur)
                                         });
                                     },
                                     &mut Value::Object(ref mut obj) => {
-                                        state.redo_stack.push(state::UndoAction::SwapIndicies { path, from, to });
+                                        for step in &mut state.nav_state.history {
+                                            if step.path == path {
+                                                if step.selected == from {
+                                                    step.selected = to;
+                                                } else if step.selected == to {
+                                                    step.selected = from;
+                                                } else {}
+                                            }
+                                        }
+
+                                        state.redo_stack.push(state::UndoAction::SwapIndicies { path: path.clone(), from, to });
 
                                         obj.swap_indices(from, to);
-                                        state.status.message = state::StatusMessage::Ok("Successfully undid object key move".to_owned());
+                                        state.status.message = state::StatusMessage::Ok(format!("Successful undo object move at {path}"));
                                         state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
                                             std::time::Instant::now().checked_add(dur)
                                         });
@@ -474,13 +503,17 @@ pub fn reducer(mut state: State, action: Action) -> State {
             if let Some(top) = state.redo_stack.pop() {
                 match top {
                     state::UndoAction::ReplaceCurrent { path, value } => {
-                        if let Some(node) = path.parse::<ValuePointer>().ok()
+                        if state.nav_state.current.path.starts_with(&path) {
+                            state.status.message = state::StatusMessage::Err(format!("Unsafe redo operation, your current location might get overwritten by changing {path}"));
+                            state.status.timeout = None;
+                            state.redo_stack.push(state::UndoAction::ReplaceCurrent { path, value });
+                        } else if let Some(node) = path.parse::<ValuePointer>().ok()
                             .and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
-                                state.undo_stack.push(state::UndoAction::ReplaceCurrent { path, value: node.clone() });
+                                state.undo_stack.push(state::UndoAction::ReplaceCurrent { path: path.clone(), value: node.clone() });
 
                                 *node = value;
 
-                                state.status.message = state::StatusMessage::Ok("Successfully redid value replacement".to_owned());
+                                state.status.message = state::StatusMessage::Ok(format!("Successful redo value replacement at {path}"));
                                 state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
                                     std::time::Instant::now().checked_add(dur)
                                 });
@@ -496,19 +529,39 @@ pub fn reducer(mut state: State, action: Action) -> State {
                             .and_then(|pointer| pointer.get_mut(&mut state.doc).ok()) {
                                 match node {
                                     &mut Value::Array(ref mut arr) => {
-                                        state.undo_stack.push(state::UndoAction::SwapIndicies { path, from, to });
+                                        for step in &mut state.nav_state.history {
+                                            if step.path == path {
+                                                if step.selected == from {
+                                                    step.selected = to;
+                                                } else if step.selected == to {
+                                                    step.selected = from;
+                                                } else {}
+                                            }
+                                        }
+
+                                        state.undo_stack.push(state::UndoAction::SwapIndicies { path: path.clone(), from, to });
 
                                         arr.swap(from, to);
-                                        state.status.message = state::StatusMessage::Ok("Successfully redid array index move".to_owned());
+                                        state.status.message = state::StatusMessage::Ok(format!("Successful redo array move at {path}"));
                                         state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
                                             std::time::Instant::now().checked_add(dur)
                                         });
                                     },
                                     &mut Value::Object(ref mut obj) => {
-                                        state.undo_stack.push(state::UndoAction::SwapIndicies { path, from, to });
+                                        for step in &mut state.nav_state.history {
+                                            if step.path == path {
+                                                if step.selected == from {
+                                                    step.selected = to;
+                                                } else if step.selected == to {
+                                                    step.selected = from;
+                                                } else {}
+                                            }
+                                        }
+
+                                        state.undo_stack.push(state::UndoAction::SwapIndicies { path: path.clone(), from, to });
 
                                         obj.swap_indices(from, to);
-                                        state.status.message = state::StatusMessage::Ok("Successfully redid object key move".to_owned());
+                                        state.status.message = state::StatusMessage::Ok(format!("Successful redo object move at {path}"));
                                         state.status.timeout = Some(core::time::Duration::from_secs(2)).and_then(|dur| {
                                             std::time::Instant::now().checked_add(dur)
                                         });
