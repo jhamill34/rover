@@ -1,3 +1,9 @@
+#![allow(
+    clippy::missing_trait_methods
+)]
+
+//!
+
 use serde::{
     de::Visitor,
     ser::{SerializeMap, SerializeSeq},
@@ -31,7 +37,7 @@ struct ValueVisitor;
 impl<'de> Visitor<'de> for ValueVisitor {
     type Value = Value;
 
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
         formatter.write_str("a valid JSON value")
     }
 
