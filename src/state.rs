@@ -1,8 +1,6 @@
 //!
 
-use std::collections::HashMap;
-
-use crate::value::Value;
+use crate::{value::Value, search::PatternCache};
 
 ///
 pub const ROOT_PATH: &str = "#";
@@ -107,7 +105,8 @@ impl State {
             search_state: Search {
                 value: String::new(),
                 filtered_paths: vec![],
-                all_paths: HashMap::new(),
+                cache: PatternCache::new(1000),
+                deref_cache: PatternCache::new(1000),
                 selected: 0,
             },
             import_prompt_state: ImportPrompt {
@@ -148,7 +147,10 @@ pub struct Search {
     pub value: String,
 
     ///
-    pub all_paths: HashMap<String, usize>,
+    pub cache: PatternCache,
+
+    ///
+    pub deref_cache: PatternCache,
 
     ///
     pub filtered_paths: Vec<String>,

@@ -7,9 +7,8 @@ use std::collections::HashMap;
 use crate::{
     action::Action,
     pointer::ValuePointer,
-    search::filter,
     state::{self, State, Step, ROOT_PATH},
-    value::Value,
+    value::Value, search::search,
 };
 
 ///
@@ -287,10 +286,9 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::SearchSetValue { value } => {
-            let filtered_list: Vec<_> = filter(&state.doc, &state.search_state.all_paths, &value);
-            state.search_state.filtered_paths = filtered_list;
+            let results = search(&state.doc, &mut state.search_state.cache, &mut state.search_state.deref_cache, &value);
+            state.search_state.filtered_paths = results;
             state.search_state.value = value;
-
             state
         }
         Action::SearchUp => {
@@ -319,6 +317,8 @@ pub fn reducer(mut state: State, action: Action) -> State {
 
             state
         }
+        // Action::SearchCursorLeft 
+        // Action::SearchCursorRight
         Action::DocumentReplaceCurrent { value } => {
             let existing = state
                 .nav_state
@@ -366,10 +366,14 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state.import_prompt_state.value = value;
             state
         }
+        // Action::ImportPromptCursorLeft
+        // Action::ImportPromptCursorRight
         Action::ExportPromptSetValue { value } => {
             state.export_prompt_state.value = value;
             state
         }
+        // Action::ExportPromptCursorLeft
+        // Action::ExportPromptCursorRight
         Action::SetStatus { message, timeout } => {
             state.status.message = message;
             state.status.timeout =
@@ -381,7 +385,6 @@ pub fn reducer(mut state: State, action: Action) -> State {
             let mut paths = HashMap::new();
 
             while let Some((path, value)) = stack.pop() {
-                let mut child_count: usize = 0;
                 match value {
                     &Value::Object(ref map) => {
                         if !map.contains_key("$ref") {
@@ -389,7 +392,6 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                 let key = key.replace('/', "~1");
                                 let path = format!("{path}/{key}");
                                 stack.push((path, value));
-                                child_count = child_count.saturating_add(1);
                             }
                         }
                     }
@@ -397,16 +399,16 @@ pub fn reducer(mut state: State, action: Action) -> State {
                         for (index, value) in array.iter().enumerate() {
                             let path = format!("{path}/{index}");
                             stack.push((path, value));
-                            child_count = child_count.saturating_add(1);
                         }
                     }
                     &Value::Null | &Value::Bool(_) | &Value::Number(_) | &Value::String(_) => {}
                 };
 
-                paths.insert(path, child_count);
+                paths.insert(path, 0);
             }
 
-            state.search_state.all_paths = paths;
+            state.search_state.cache.reset(paths.clone());
+            state.search_state.deref_cache.reset(paths);
 
             state
         }

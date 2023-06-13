@@ -9,6 +9,9 @@
     clippy::shadow_unrelated,
     clippy::shadow_same,
     clippy::print_stdout,
+
+    clippy::question_mark_used,
+    clippy::needless_borrowed_reference,
     // clippy::too_many_lines
 )]
 

@@ -242,7 +242,6 @@ pub fn nav<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 if let Some(selected_path) = selected_path {
                     let text: Vec<Spans> = selected_path
                         .split('\n')
-                        .into_iter()
                         .map(|line| Spans::from(Span::from(line)))
                         .collect();
 
@@ -401,12 +400,7 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 .map(|path| ListItem::new(Text::raw(path)))
                 .collect();
 
-            let title = format!(
-                "Paths ({}/{})",
-                filtered_items.len(),
-                state.search_state.all_paths.len()
-            );
-            let search_paths = Block::default().title(title).borders(Borders::ALL);
+            let search_paths = Block::default().title("Paths").borders(Borders::ALL);
             let search_paths = List::new(filtered_items)
                 .highlight_symbol("> ")
                 .highlight_style(
@@ -447,7 +441,6 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 if let Some(selected_path) = selected_path {
                     let text: Vec<Spans> = selected_path
                         .split('\n')
-                        .into_iter()
                         .map(|line| Spans::from(Span::from(line)))
                         .collect();
 

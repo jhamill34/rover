@@ -220,7 +220,7 @@ where
                                         anyhow!("Unable to get lifecycle lock: {e}")
                                     })?;
                                     lifecycle.suspend()?;
-                                }
+                                };
 
                                 let file_name =
                                     store.select(|state: &State| state.file_name.clone()).await;
@@ -231,7 +231,7 @@ where
                                         anyhow!("Unable to get lifecycle lock: {e}")
                                     })?;
                                     lifecycle.resume()?;
-                                }
+                                };
 
                                 match new_value {
                                     Ok(new_value) => {
@@ -501,7 +501,7 @@ where
                                         anyhow!("Unable to get lifecycle lock: {e}")
                                     })?;
                                     lifecycle.suspend()?;
-                                }
+                                };
 
                                 let file_name =
                                     store.select(|state: &State| state.file_name.clone()).await;
@@ -512,7 +512,7 @@ where
                                         anyhow!("Unable to get lifecycle lock: {e}")
                                     })?;
                                     lifecycle.resume()?;
-                                }
+                                };
 
                                 match new_value {
                                     Ok(new_value) => {
