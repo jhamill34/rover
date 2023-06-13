@@ -109,7 +109,7 @@ pub fn score(pattern: &Pattern, cache: &mut PatternCache, deref_cache: &mut Patt
             cache.exact.set(pattern, result.clone());
 
             result
-        }// TODO: Implement me
+        }
         &Pattern::Prefix(ref pattern) => {
             if let Some(existing) = cache.prefix.get(pattern) {
                 return existing.clone();
