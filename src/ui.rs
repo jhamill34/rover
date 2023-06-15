@@ -88,12 +88,8 @@ pub fn import_prompt<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 Spans::from(vec![
                     Span::raw(" > "),
                     Span::raw(state.import_prompt_state.value.clone()),
-                    Span::styled(
-                        "_",
-                        Style::default()
-                        .bg(Color::White)
-                    ),
-                ])
+                    Span::styled("_", Style::default().bg(Color::White)),
+                ]),
             ]))
             .block(prompt);
 
@@ -144,12 +140,8 @@ pub fn export_prompt<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 Spans::from(vec![
                     Span::raw(" > "),
                     Span::raw(state.export_prompt_state.value.clone()),
-                    Span::styled(
-                        "_",
-                        Style::default()
-                        .bg(Color::White)
-                    ),
-                ])
+                    Span::styled("_", Style::default().bg(Color::White)),
+                ]),
             ]))
             .block(prompt);
 
@@ -363,11 +355,7 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
         let input_text = Spans::from(vec![
             Span::raw(" > "),
             Span::raw(state.search_state.value.clone()),
-            Span::styled(
-                "_",
-                Style::default()
-                    .bg(Color::White)
-            ),
+            Span::styled("_", Style::default().bg(Color::White)),
         ]);
         let input_paragraph = Paragraph::new(input_text).block(input);
         frame.render_widget(input_paragraph, rect);

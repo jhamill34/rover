@@ -19,7 +19,7 @@
 
 extern crate alloc;
 use alloc::sync::Arc;
-use log4rs::{append::file::FileAppender, Config, config::Appender};
+use log4rs::{append::file::FileAppender, config::Appender, Config};
 
 use std::{env, sync::Mutex};
 
@@ -64,7 +64,7 @@ fn setup_logging() -> anyhow::Result<()> {
                 .build(log::LevelFilter::Info),
         )
         .context("Failed to create log configuration.")?;
-    
+
     log4rs::init_config(config).context("Failed to initialize log configuration.")?;
 
     Ok(())

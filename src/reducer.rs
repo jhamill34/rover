@@ -7,8 +7,9 @@ use std::collections::HashMap;
 use crate::{
     action::Action,
     pointer::ValuePointer,
+    search::search,
     state::{self, State, Step, ROOT_PATH},
-    value::Value, search::search,
+    value::Value,
 };
 
 ///
@@ -286,7 +287,12 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::SearchSetValue { value } => {
-            let results = search(&state.doc, &mut state.search_state.cache, &mut state.search_state.deref_cache, &value);
+            let results = search(
+                &state.doc,
+                &mut state.search_state.cache,
+                &mut state.search_state.deref_cache,
+                &value,
+            );
             state.search_state.filtered_paths = results;
             state.search_state.value = value;
             state
@@ -317,7 +323,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
 
             state
         }
-        // Action::SearchCursorLeft 
+        // Action::SearchCursorLeft
         // Action::SearchCursorRight
         Action::DocumentReplaceCurrent { value } => {
             let existing = state

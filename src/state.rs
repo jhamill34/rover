@@ -1,6 +1,6 @@
 //!
 
-use crate::{value::Value, search::PatternCache};
+use crate::{search::PatternCache, value::Value};
 
 ///
 pub const ROOT_PATH: &str = "#";

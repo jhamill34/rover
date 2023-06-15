@@ -1,6 +1,4 @@
-#![allow(
-    clippy::missing_trait_methods
-)]
+#![allow(clippy::missing_trait_methods)]
 
 //!
 
