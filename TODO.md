@@ -1,3 +1,4 @@
 - [ ] Mark what has been edited
 - [ ] LOGGING!!!
 - [ ] Clean up redundant code
+- [ ] Regression bug: selecting $ref doesn't follow
