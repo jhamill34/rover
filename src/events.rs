@@ -60,7 +60,10 @@ where
                     .select(move |state: &State| -> anyhow::Result<()> {
                         let mut lifecycle = lifecycle
                             .lock()
-                            .map_err(|e| anyhow!("Unable to get lifecycle lock: {e}"))?;
+                            .map_err(|e| {
+                                log::warn!("Unable to get lifecycle lock: {e}");
+                                anyhow!("Unable to get lifecycle lock: {e}")
+                            })?;
                         lifecycle.resize(width, height)?;
                         lifecycle.refresh(state)?;
                         Ok(())
