@@ -38,7 +38,6 @@ where
     R: Reducer<State, Action> + Send + Sync + 'static,
     B: Backend + io::Write + Send + Sync + 'static,
 {
-    // TODO: Event buffering for multi key commands
     loop {
         let status_timeout = store.select(|state: &State| state.status.timeout).await;
         if let Some(status_timeout) = status_timeout {

@@ -23,13 +23,11 @@ impl <T> SimpleStore<T> {
 impl <T> SimpleStore<T> {
     ///
     pub fn get(&self, key: &str) -> Option<&T> {
-        // TODO: implement LRU 
         self.cache.get(key)
     }
 
     ///
     pub fn set(&mut self, key: &str, value: T) {
-        // TODO: implement LRU
         self.cache.insert(key.to_owned(), value);
     }
 
