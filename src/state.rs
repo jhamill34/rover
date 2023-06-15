@@ -17,6 +17,9 @@ pub struct State {
     pub current_page: Page,
 
     ///
+    pub needs_index: bool,
+
+    ///
     pub undo_stack: Vec<UndoAction>,
 
     ///
@@ -93,6 +96,7 @@ impl State {
             file_name,
             doc,
             current_page: Page::Nav,
+            needs_index: true,
             undo_stack: vec![],
             redo_stack: vec![],
             nav_state: Nav {

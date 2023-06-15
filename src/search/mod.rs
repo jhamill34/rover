@@ -11,7 +11,7 @@ mod parser;
 pub mod cache;
 
 ///
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct PatternCache {
     ///
     pub core: HashMap<String, i16>,

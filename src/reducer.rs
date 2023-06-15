@@ -110,6 +110,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                 match previous {
                     &mut Value::Object(ref mut obj) => {
                         obj.swap_indices(cur, new_selected);
+                        state.needs_index = true;
                         state.undo_stack.push(state::UndoAction::SwapIndicies {
                             path: state.nav_state.current.path.clone(),
                             from: new_selected,
@@ -119,6 +120,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                     }
                     &mut Value::Array(ref mut arr) => {
                         arr.swap(cur, new_selected);
+                        state.needs_index = true;
                         state.undo_stack.push(state::UndoAction::SwapIndicies {
                             path: state.nav_state.current.path.clone(),
                             from: new_selected,
@@ -184,6 +186,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                 match previous {
                     &mut Value::Object(ref mut obj) => {
                         obj.swap_indices(cur, new_selected);
+                        state.needs_index = true;
                         state.undo_stack.push(state::UndoAction::SwapIndicies {
                             path: state.nav_state.current.path.clone(),
                             from: new_selected,
@@ -193,6 +196,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                     }
                     &mut Value::Array(ref mut arr) => {
                         arr.swap(cur, new_selected);
+                        state.needs_index = true;
                         state.undo_stack.push(state::UndoAction::SwapIndicies {
                             path: state.nav_state.current.path.clone(),
                             from: new_selected,
@@ -362,6 +366,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                 };
 
                 if let Some((path, existing)) = existing {
+                    state.needs_index = true;
                     state.undo_stack.push(state::UndoAction::ReplaceCurrent {
                         path,
                         value: existing.clone(),
@@ -393,34 +398,38 @@ pub fn reducer(mut state: State, action: Action) -> State {
             state
         }
         Action::SearchSetAllPaths => {
-            let mut stack = vec![(ROOT_PATH.to_owned(), &state.doc)];
-            let mut paths = HashMap::new();
+            if state.needs_index {
+                log::info!("Changes exist on document, reindexing paths");
+                let mut stack = vec![(ROOT_PATH.to_owned(), &state.doc)];
+                let mut paths = HashMap::new();
 
-            while let Some((path, value)) = stack.pop() {
-                match value {
-                    &Value::Object(ref map) => {
-                        if !map.contains_key("$ref") {
-                            for (key, value) in map {
-                                let key = key.replace('/', "~1");
-                                let path = format!("{path}/{key}");
+                while let Some((path, value)) = stack.pop() {
+                    match value {
+                        &Value::Object(ref map) => {
+                            if !map.contains_key("$ref") {
+                                for (key, value) in map {
+                                    let key = key.replace('/', "~1");
+                                    let path = format!("{path}/{key}");
+                                    stack.push((path, value));
+                                }
+                            }
+                        }
+                        &Value::Array(ref array) => {
+                            for (index, value) in array.iter().enumerate() {
+                                let path = format!("{path}/{index}");
                                 stack.push((path, value));
                             }
                         }
-                    }
-                    &Value::Array(ref array) => {
-                        for (index, value) in array.iter().enumerate() {
-                            let path = format!("{path}/{index}");
-                            stack.push((path, value));
-                        }
-                    }
-                    &Value::Null | &Value::Bool(_) | &Value::Number(_) | &Value::String(_) => {}
-                };
+                        &Value::Null | &Value::Bool(_) | &Value::Number(_) | &Value::String(_) => {}
+                    };
 
-                paths.insert(path, 0);
+                    paths.insert(path, 0);
+                }
+
+                state.search_state.cache.reset(paths.clone());
+                state.search_state.deref_cache.reset(paths);
+                state.needs_index = false;
             }
-
-            state.search_state.cache.reset(paths.clone());
-            state.search_state.deref_cache.reset(paths);
 
             state
         }
@@ -439,6 +448,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                             .ok()
                             .and_then(|pointer| pointer.get_mut(&mut state.doc).ok())
                         {
+                            state.needs_index = true;
                             state.redo_stack.push(state::UndoAction::ReplaceCurrent {
                                 path: path.clone(),
                                 value: node.clone(),
@@ -452,6 +462,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                             state.status.timeout = Some(core::time::Duration::from_secs(2))
                                 .and_then(|dur| std::time::Instant::now().checked_add(dur));
                         } else {
+                            log::error!("Corrupted undo stack, try reloading the document");
                             state.undo_stack.clear();
                             state.redo_stack.clear();
                             state.status.message = state::StatusMessage::Err(
@@ -479,6 +490,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                         }
                                     }
 
+                                    state.needs_index = true;
                                     state.redo_stack.push(state::UndoAction::SwapIndicies {
                                         path: path.clone(),
                                         from,
@@ -504,6 +516,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                         }
                                     }
 
+                                    state.needs_index = true;
                                     state.redo_stack.push(state::UndoAction::SwapIndicies {
                                         path: path.clone(),
                                         from,
@@ -521,6 +534,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                 | Value::Bool(_)
                                 | Value::Number(_)
                                 | Value::String(_)) => {
+                                    log::error!("Corrupted undo stack, try reloading the document");
                                     state.undo_stack.clear();
                                     state.redo_stack.clear();
                                     state.status.message = state::StatusMessage::Err(
@@ -531,6 +545,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                 }
                             }
                         } else {
+                            log::error!("Corrupted undo stack, try reloading the document");
                             state.undo_stack.clear();
                             state.redo_stack.clear();
                             state.status.message = state::StatusMessage::Err(
@@ -563,6 +578,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                             .ok()
                             .and_then(|pointer| pointer.get_mut(&mut state.doc).ok())
                         {
+                            state.needs_index = true;
                             state.undo_stack.push(state::UndoAction::ReplaceCurrent {
                                 path: path.clone(),
                                 value: node.clone(),
@@ -576,6 +592,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                             state.status.timeout = Some(core::time::Duration::from_secs(2))
                                 .and_then(|dur| std::time::Instant::now().checked_add(dur));
                         } else {
+                            log::error!("Corrupted redo stack, try reloading the document");
                             state.undo_stack.clear();
                             state.redo_stack.clear();
                             state.status.message = state::StatusMessage::Err(
@@ -603,6 +620,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                         }
                                     }
 
+                                    state.needs_index = true;
                                     state.undo_stack.push(state::UndoAction::SwapIndicies {
                                         path: path.clone(),
                                         from,
@@ -628,6 +646,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                         }
                                     }
 
+                                    state.needs_index = true;
                                     state.undo_stack.push(state::UndoAction::SwapIndicies {
                                         path: path.clone(),
                                         from,
@@ -645,6 +664,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                 | Value::Bool(_)
                                 | Value::Number(_)
                                 | Value::String(_)) => {
+                                    log::error!("Corrupted redo stack, try reloading the document");
                                     state.undo_stack.clear();
                                     state.redo_stack.clear();
                                     state.status.message = state::StatusMessage::Err(
@@ -655,6 +675,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                 }
                             }
                         } else {
+                            log::error!("Corrupted redo stack, try reloading the document");
                             state.undo_stack.clear();
                             state.redo_stack.clear();
                             state.status.message = state::StatusMessage::Err(
