@@ -37,7 +37,13 @@ pub fn reducer(mut state: State, action: Action) -> State {
             {
                 let index = state.nav_state.current.selected;
                 let path = match selected {
-                    &Value::Object(ref map) => map.get_index(index).map(|(key, _)| {
+                    &Value::Object(ref map) => map.get_index(index).map(|(key, value)| {
+                        if let &Value::Object(ref value) = value {
+                            if let Some(&Value::String(ref reference)) = value.get("$ref") {
+                                return reference.clone();
+                            }
+                        }
+
                         let key = key.replace('/', "~1");
 
                         format!("{selected_path}/{key}")

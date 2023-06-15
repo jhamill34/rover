@@ -1,5 +1,4 @@
 - [ ] Mark what has been edited
 - [ ] Clean up redundant code
-- [ ] Regression bug: selecting $ref doesn't follow
 - [ ] Event buffering for multi key commands
 - [ ] Implement LRU Cache
