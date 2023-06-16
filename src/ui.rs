@@ -388,7 +388,11 @@ fn search<B: Backend>(frame: &mut Frame<B>, state: &State) {
                 .map(|path| ListItem::new(Text::raw(path)))
                 .collect();
 
-            let search_paths = Block::default().title("Paths").borders(Borders::ALL);
+            let total = state.search_state.cache.core.len();
+            let current_total = state.search_state.filtered_paths.len();
+            let title = format!("Paths ({current_total}/{total})");
+
+            let search_paths = Block::default().title(title).borders(Borders::ALL);
             let search_paths = List::new(filtered_items)
                 .highlight_symbol("> ")
                 .highlight_style(
