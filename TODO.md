@@ -1,3 +1,4 @@
 - [ ] Mark what has been edited
 - [ ] Clean up redundant code
 - [ ] Event buffering for multi key commands
+- [ ] Scripting / Edit multiple
