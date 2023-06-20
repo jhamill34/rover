@@ -33,9 +33,7 @@ This will start at TUI in the [Navigation View](#navigation-view).
 
 ## Navigation View
 
-< TODO: Make Gif >
-
-![navigation](assets/navigation-view.png)
+![navigation-nav](assets/navigation-view-nav.gif)
 
 ### Location Section
 
@@ -74,12 +72,41 @@ updates should time out in 2 seconds but you can also manually clear them with `
 
 | Key | Description |
 |:---|:----|
+| `h`, `<Backspace>`, `<Left Arrow>` | Move to the previously selected path |
+| `j`, `<Down Arrow>`, `<C-n>` | Highlight the next item in the current view, wraps around to the top if the current item is the last in the list |
+| `k`, `<Up Arrow>`, `<C-p>` | Highlight the previous item in the current view, wraps around to the bottom if the current item is the top in the list |
+| `l`, `<Right Arrow>`, `<Enter>` | Select the currently highlighted item |
+| `g` | Move cursor to the top of the list |
+| `G` | Move cursor to the bottom of the list |
+| `I` | Opens up the [Import View](#import) |
+| `O` | Opens up the [Export View](#export)  |
+| `/` | Open the [Search View](#search-view) |
+| `<C-q>` | Quit without saving (bypasses warning) |
+| `q`, `<Esc>` | Quit |
+| `<C-c>` | Clear status (or quit if status is cleared already) |
+
 
 ### Other Features
 
-Reference Keys...
+#### Reference Keys
 
-Editing...
+< TODO >
+
+#### Editing, Undo, Redo
+
+| Key | Description |
+|:---|:----|
+| `<C-e>` | Edit the currently selected item in default editor |
+| `<C-s>` | Persist changes to the document (currently this wipes out the undo history) |
+| `u` | Undo the last mutating operation |
+| `r` | Redo the last mutating operation |
+
+#### Item Swapping
+
+| Key | Description |
+|:---|:----|
+| `<Shift-J>` | Swaps the currently highlighted item with the next in the current list |
+| `<Shift-K>` | Swaps the currently highlighted item with the previous in the current list |
 
 ## Search View
 
@@ -129,14 +156,33 @@ currently selected search result was the root of the document.
 
 | Key | Description |
 |:---|:----|
+| `<Down Arrow>`, `<C-n>` | Highlight the next item in the current view, wraps around to the top if the current item is the last in the list |
+| `<Up Arrow>`, `<C-p>` | Highlight the previous item in the current view, wraps around to the bottom if the current item is the top in the list |
+| `<Enter>` | Select the currently highlighted path, navigate to it, and open the [Navigation View](#navigation-view) |
+| `<C-c>`, `<Esc>` | Move back to the [Navigation View](#navigation-view) |
 
-## Import
+## Import View
 
 < TODO >
 
-## Export
+### Import Keybindings
+
+| Key | Description |
+|:---|:----|
+| `<Enter>` | Attempt to replace the currently selected item with the value in the location specified and navigate back to the [Navigation View](#navigation-view) | 
+| `<C-c>`, `<Esc>` | Move back to the [Navigation View](#navigation-view) |
+
+## Export View
 
 < TODO >
+
+### Export Keybindings
+
+| Key | Description |
+|:---|:----|
+| `<Enter>` | Attempt to persist the current location in the document to the location specified and navigate back to the [Navigation View](#navigation-view) | 
+| `<C-c>`, `<Esc>` | Move back to the [Navigation View](#navigation-view) |
+
 
 ## Logging 
 
