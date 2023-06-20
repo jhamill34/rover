@@ -83,6 +83,11 @@ where
                             KeyEvent {
                                 code: KeyCode::Char('j') | KeyCode::Down,
                                 ..
+                            }  |
+                            KeyEvent {
+                                code: KeyCode::Char('n'),
+                                modifiers: KeyModifiers::CONTROL,
+                                ..
                             } => store.dispatch(Action::NavDown).await,
                             KeyEvent {
                                 code: KeyCode::Char('J'),
@@ -91,7 +96,13 @@ where
                             KeyEvent {
                                 code: KeyCode::Char('k') | KeyCode::Up,
                                 ..
-                            } => store.dispatch(Action::NavUp).await,
+                            }  |
+                            KeyEvent {
+                                code: KeyCode::Char('p'),
+                                modifiers: KeyModifiers::CONTROL,
+                                ..
+                            }  
+                            => store.dispatch(Action::NavUp).await,
                             KeyEvent {
                                 code: KeyCode::Char('K'),
                                 ..

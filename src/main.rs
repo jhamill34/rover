@@ -47,7 +47,7 @@ fn setup_logging() -> anyhow::Result<()> {
     dotenv::dotenv().ok();
 
     let rover_home = env::var("ROVER_HOME")
-        .context("ROVER_HOME environment variable not set. Please set it to the path of your rover home directory.")?;
+        .unwrap_or_else(|_| env::var("HOME").unwrap_or_else(|_| String::from(".")));
 
     let log_file = FileAppender::builder()
         .encoder(Box::new(log4rs::encode::pattern::PatternEncoder::new(
