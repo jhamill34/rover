@@ -103,6 +103,8 @@ updates should time out in 2 seconds but you can also manually clear them with `
 
 #### Item Swapping
 
+![navigation-swap](assets/navigation-view-swap.gif)
+
 | Key | Description |
 |:---|:----|
 | `<Shift-J>` | Swaps the currently highlighted item with the next in the current list |
