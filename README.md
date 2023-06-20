@@ -127,11 +127,11 @@ search feel more natural `OR` actually has a higher natural precedence than `AND
 
 | Token | Match Type | Description | 
 |:---|:---|:---|
-| sbtrkt | fuzzy-match | JSON Pointers that match `sbtrkt` |
-| 'path | exact-match | JSON Pointers that contain the substring `path` |
-| ^#/info | prefix-match | JSON Pointers that start with `#/info` |
-| operationId$ | exact-match | JSON Pointers that end with `operationId` |
-| *description | deref-match | Dereferences the JSON pointer and matches only if `description` matches the Object keys of the children or string value of the value |
+| `sbtrkt` | fuzzy-match | JSON Pointers that match `sbtrkt` |
+| `'path` | exact-match | JSON Pointers that contain the substring `path` |
+| `^#/info` | prefix-match | JSON Pointers that start with `#/info` |
+| `operationId$` | exact-match | JSON Pointers that end with `operationId` |
+| `*description` | deref-match | Dereferences the JSON pointer and matches only if `description` matches the Object keys of the children or string value of the value |
 
 #### Example
 
