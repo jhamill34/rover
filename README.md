@@ -11,7 +11,7 @@ load a document and navigate the file by walking through the keys as if they wer
 
 #### MacOS Apple Silicon
 
-```
+```bash
 curl -O -L https://github.com/jhamill34/rover/releases/download/v0.1.0/rover-v0.1.0-aarch64-apple-darwin.tar.gz
 tar xvf rover-v0.1.0-aarch64-apple-darwin.tar.gz
 mv rover-v0.1.0-aarch64-apple-darwin/rover <somewhere in your path>
@@ -19,7 +19,7 @@ mv rover-v0.1.0-aarch64-apple-darwin/rover <somewhere in your path>
 
 #### MacOS Intel 
 
-```
+```bash
 curl -O -L https://github.com/jhamill34/rover/releases/download/v0.1.0/rover-v0.1.0-x86_64-apple-darwin.tar.gz
 tar xvf rover-v0.1.0-x86_64-apple-darwin.tar.gz
 mv rover-v0.1.0-x86_64-apple-darwin/rover <somewhere in your path>
