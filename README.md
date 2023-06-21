@@ -78,8 +78,8 @@ updates should time out in 2 seconds but you can also manually clear them with `
 | `l`, `<Right Arrow>`, `<Enter>` | Select the currently highlighted item |
 | `g` | Move cursor to the top of the list |
 | `G` | Move cursor to the bottom of the list |
-| `I` | Opens up the [Import View](#import) |
-| `O` | Opens up the [Export View](#export)  |
+| `I` | Opens up the [Import View](#import-view) |
+| `O` | Opens up the [Export View](#export-view)  |
 | `/` | Open the [Search View](#search-view) |
 | `<C-q>` | Quit without saving (bypasses warning) |
 | `q`, `<Esc>` | Quit |
@@ -114,7 +114,7 @@ updates should time out in 2 seconds but you can also manually clear them with `
 
 ## Search View
 
-< TODO: Add Gif >
+![search](assets/search-view.gif)
 
 ### Input 
 
