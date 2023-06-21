@@ -167,7 +167,7 @@ currently selected search result was the root of the document.
 
 ## Import View
 
-< TODO >
+![import](assets/import-view.gif)
 
 ### Import Keybindings
 
