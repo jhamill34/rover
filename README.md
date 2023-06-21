@@ -178,7 +178,7 @@ currently selected search result was the root of the document.
 
 ## Export View
 
-< TODO >
+![export](assets/export-view.gif)
 
 ### Export Keybindings
 
