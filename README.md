@@ -94,6 +94,8 @@ updates should time out in 2 seconds but you can also manually clear them with `
 
 #### Editing, Undo, Redo
 
+![navigation-undo](assets/navigation-view-undo.gif)
+
 | Key | Description |
 |:---|:----|
 | `<C-e>` | Edit the currently selected item in default editor |
