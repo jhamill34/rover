@@ -64,10 +64,6 @@ will be serialized in YAML.
 Any information related to an executed command will be shown here (Info, Warnings, Errors, etc.). Most 
 updates should time out in 2 seconds but you can also manually clear them with `<Ctrl-c>`.
 
-*Status messages:*
-
-< TODO: add table here >
-
 ### Navigation Keybindings 
 
 | Key | Description |
@@ -90,7 +86,16 @@ updates should time out in 2 seconds but you can also manually clear them with `
 
 #### Reference Keys
 
-< TODO >
+References can be followed during navigation. Any map that has the key `$ref` will be treated as a
+reference. Selecting this will jump directly to that location in the document. 
+
+Reference maps look like the following:
+
+```
+{
+	"$ref": "#/components/schemas/Project"	
+}
+```
 
 #### Editing, Undo, Redo
 
@@ -190,7 +195,8 @@ currently selected search result was the root of the document.
 
 ## Logging 
 
-< TODO >
+For diagnostics reasons, a logging file will be created. By default this file will be located at `$HOME/rover.log` but you can customize this
+by setting the environment variable `ROVER_HOME`
 
 ## Inspiration
 
