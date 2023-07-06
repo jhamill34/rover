@@ -161,10 +161,7 @@ mod test {
     fn test_all_match_score() {
         let alg = Fuzzy::default();
 
-        assert_eq!(
-            80,
-            alg.score("Hello", "Hello")
-        );
+        assert_eq!(80, alg.score("Hello", "Hello"));
     }
 
     #[test]
@@ -188,4 +185,3 @@ mod test {
         assert_eq!(44, alg.score("Hello", "Hlo"));
     }
 }
-
