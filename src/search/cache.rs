@@ -39,10 +39,7 @@ impl<T> SimpleStore<T> {
 
 #[cfg(test)]
 mod test {
-    #![allow(
-        clippy::unwrap_used,
-        clippy::similar_names,
-    )]
+    #![allow(clippy::unwrap_used, clippy::similar_names)]
 
     use std::collections::HashSet;
 
