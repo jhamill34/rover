@@ -7,8 +7,8 @@ use crate::value::Value;
 use self::cache::SimpleStore;
 
 mod algs;
-mod parser;
 pub mod cache;
+mod parser;
 
 ///
 #[derive(Debug)]
@@ -24,7 +24,6 @@ pub struct PatternCache {
     ///
     pub fuzzy: SimpleStore<HashMap<String, i16>>,
 }
-
 
 impl PatternCache {
     ///
@@ -49,17 +48,22 @@ impl PatternCache {
     }
 }
 
-
 ///
-pub fn search(doc: &Value, cache: &mut PatternCache, deref_cache: &mut PatternCache, query: &str) -> Vec<String> {   
+pub fn search(
+    doc: &Value,
+    cache: &mut PatternCache,
+    deref_cache: &mut PatternCache,
+    query: &str,
+) -> Vec<String> {
     let patterns = query.parse::<parser::Pattern>();
 
     if let Ok(patterns) = patterns {
-        let mut result = algs::score(&patterns, cache, deref_cache, doc).into_iter().collect::<Vec<_>>();
+        let mut result = algs::score(&patterns, cache, deref_cache, doc)
+            .into_iter()
+            .collect::<Vec<_>>();
         result.sort_by(|&(_, ref a), &(_, ref b)| b.cmp(a));
         result.into_iter().map(|(key, _)| key).collect()
     } else {
         Vec::new()
     }
 }
-

@@ -57,12 +57,10 @@ where
                 let lifecycle = Arc::clone(&lifecycle);
                 store
                     .select(move |state: &State| -> anyhow::Result<()> {
-                        let mut lifecycle = lifecycle
-                            .lock()
-                            .map_err(|e| {
-                                log::warn!("Unable to get lifecycle lock: {e}");
-                                anyhow!("Unable to get lifecycle lock: {e}")
-                            })?;
+                        let mut lifecycle = lifecycle.lock().map_err(|e| {
+                            log::warn!("Unable to get lifecycle lock: {e}");
+                            anyhow!("Unable to get lifecycle lock: {e}")
+                        })?;
                         lifecycle.resize(width, height)?;
                         lifecycle.refresh(state)?;
                         Ok(())
@@ -83,8 +81,8 @@ where
                             KeyEvent {
                                 code: KeyCode::Char('j') | KeyCode::Down,
                                 ..
-                            }  |
-                            KeyEvent {
+                            }
+                            | KeyEvent {
                                 code: KeyCode::Char('n'),
                                 modifiers: KeyModifiers::CONTROL,
                                 ..
@@ -96,13 +94,12 @@ where
                             KeyEvent {
                                 code: KeyCode::Char('k') | KeyCode::Up,
                                 ..
-                            }  |
-                            KeyEvent {
+                            }
+                            | KeyEvent {
                                 code: KeyCode::Char('p'),
                                 modifiers: KeyModifiers::CONTROL,
                                 ..
-                            }  
-                            => store.dispatch(Action::NavUp).await,
+                            } => store.dispatch(Action::NavUp).await,
                             KeyEvent {
                                 code: KeyCode::Char('K'),
                                 ..
