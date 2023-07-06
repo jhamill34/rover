@@ -2,7 +2,15 @@
     clippy::separated_literal_suffix,
     clippy::integer_arithmetic,
     clippy::arithmetic_side_effects,
-    clippy::too_many_lines
+    clippy::too_many_lines,
+
+    // TODO: REMOVE!
+    clippy::string_slice,
+    clippy::indexing_slicing,
+    clippy::redundant_else,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::as_conversions,
 )]
 
 //!

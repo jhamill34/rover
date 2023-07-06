@@ -39,6 +39,11 @@ impl<T> SimpleStore<T> {
 
 #[cfg(test)]
 mod test {
+    #![allow(
+        clippy::unwrap_used,
+        clippy::similar_names,
+    )]
+
     use std::collections::HashSet;
 
     use super::*;
@@ -93,7 +98,5 @@ mod test {
 
         let ab_view = a_view.union(b_view).copied().collect::<HashSet<_>>();
         cache.set("ab_view", ab_view);
-
-        println!("{:?}", cache);
     }
 }
