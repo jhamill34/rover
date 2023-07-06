@@ -85,7 +85,7 @@ async fn main() -> anyhow::Result<()> {
     //
     //  !!!PANICS beyond this point will ruin the terminal state!!!
     //
-    
+
     log::info!("Starting rover with file: {}", file_name);
     let terminal = configure_terminal()?;
     let mut lifecycle = Application::new(terminal);

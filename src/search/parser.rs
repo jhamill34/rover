@@ -18,7 +18,7 @@ enum PatternTokens {
     ///
     Bang,
     ///
-    LParen, 
+    LParen,
     ///
     RParen,
     ///
@@ -36,13 +36,10 @@ struct Walker<'inner, T> {
     current: usize,
 }
 
-impl <'inner, T: PartialEq> Walker<'inner, T> {
+impl<'inner, T: PartialEq> Walker<'inner, T> {
     ///
     fn new(buffer: &'inner [T]) -> Self {
-        Self {
-            buffer,
-            current: 0,
-        }
+        Self { buffer, current: 0 }
     }
 
     ///
@@ -96,45 +93,45 @@ fn lexer<T: AsRef<[u8]>>(input: T) -> anyhow::Result<Vec<PatternTokens>> {
                 }
 
                 tokens.push(PatternTokens::Space);
-            },
+            }
             b'|' => {
                 walker.advance();
                 tokens.push(PatternTokens::Pipe);
-            },
+            }
             b'!' => {
                 walker.advance();
                 tokens.push(PatternTokens::Bang);
-            },
+            }
             b'*' => {
                 walker.advance();
                 tokens.push(PatternTokens::Star);
-            },
+            }
             b'^' => {
                 walker.advance();
                 tokens.push(PatternTokens::Caret);
-            },
+            }
             b'\'' => {
                 walker.advance();
                 tokens.push(PatternTokens::Quote);
-            },
+            }
             b'$' => {
                 walker.advance();
                 tokens.push(PatternTokens::Dollar);
-            },
+            }
             b'(' => {
                 walker.advance();
                 tokens.push(PatternTokens::LParen);
-            },
+            }
             b')' => {
                 walker.advance();
                 tokens.push(PatternTokens::RParen);
-            },
+            }
             _ => {
                 let mut buffer = Vec::new();
                 while let Some(current) = walker.peek().copied() {
                     if let b' ' | b'$' = current {
                         break;
-                    } 
+                    }
 
                     walker.advance();
                     buffer.push(current);
@@ -167,7 +164,11 @@ fn parse_and_group(walker: &mut Walker<PatternTokens>) -> Pattern {
         }
 
         let right = parse_or_group(walker);
-        expr = Pattern::Group{ op: Operation::And, left: Box::new(expr), right: Box::new(right) };
+        expr = Pattern::Group {
+            op: Operation::And,
+            left: Box::new(expr),
+            right: Box::new(right),
+        };
     }
 
     expr
@@ -177,9 +178,17 @@ fn parse_and_group(walker: &mut Walker<PatternTokens>) -> Pattern {
 fn parse_or_group(walker: &mut Walker<PatternTokens>) -> Pattern {
     let mut expr = parse_negated_pattern(walker);
 
-    while walker.match_tokens(&[PatternTokens::Space, PatternTokens::Pipe, PatternTokens::Space]) {
+    while walker.match_tokens(&[
+        PatternTokens::Space,
+        PatternTokens::Pipe,
+        PatternTokens::Space,
+    ]) {
         let right = parse_negated_pattern(walker);
-        expr = Pattern::Group{ op: Operation::Or, left: Box::new(expr), right: Box::new(right) };
+        expr = Pattern::Group {
+            op: Operation::Or,
+            left: Box::new(expr),
+            right: Box::new(right),
+        };
     }
 
     expr
@@ -194,7 +203,7 @@ fn parse_negated_pattern(walker: &mut Walker<PatternTokens>) -> Pattern {
     } else {
         parse_deref_pattern(walker)
     }
-} 
+}
 
 ///
 fn parse_deref_pattern(walker: &mut Walker<PatternTokens>) -> Pattern {
@@ -222,12 +231,12 @@ fn parse_decorated_pattern(walker: &mut Walker<PatternTokens>) -> Pattern {
         }
         Some(&PatternTokens::LParen) => {
             walker.advance();
-            
-            // optional spaces 
+
+            // optional spaces
             walker.match_tokens(&[PatternTokens::Space]);
 
             let pattern = parse_and_group(walker);
-                
+
             walker.match_tokens(&[PatternTokens::RParen]);
             pattern
         }
@@ -240,9 +249,7 @@ fn parse_decorated_pattern(walker: &mut Walker<PatternTokens>) -> Pattern {
                 Pattern::Fuzzy(pattern)
             }
         }
-        None => {
-            Pattern::Fuzzy(String::new())
-        }
+        None => Pattern::Fuzzy(String::new()),
     };
 
     expr
@@ -273,9 +280,9 @@ pub enum Operation {
 #[derive(Debug, PartialEq)]
 pub enum Pattern {
     ///
-    Group{ 
+    Group {
         ///
-        op: Operation, 
+        op: Operation,
 
         ///
         left: Box<Pattern>,
@@ -296,7 +303,7 @@ pub enum Pattern {
     ///
     Suffix(String),
 
-    /// 
+    ///
     Fuzzy(String),
 
     ///
@@ -355,7 +362,7 @@ mod test {
 
         Ok(())
     }
-    
+
     #[test]
     fn test_exact_parsing() -> anyhow::Result<()> {
         let pattern = Pattern::from_str("'Hello")?;
@@ -368,7 +375,7 @@ mod test {
 
         Ok(())
     }
-    
+
     #[test]
     fn test_prefix_parsing() -> anyhow::Result<()> {
         let pattern = Pattern::from_str("^Hello")?;
@@ -381,7 +388,7 @@ mod test {
 
         Ok(())
     }
-    
+
     #[test]
     fn test_suffix_parsing() -> anyhow::Result<()> {
         let pattern = Pattern::from_str("Hello$")?;
@@ -394,12 +401,12 @@ mod test {
 
         Ok(())
     }
-    
+
     #[test]
     fn test_or_parsing() -> anyhow::Result<()> {
         let pattern = Pattern::from_str("Hello | ^world")?;
 
-        let expected = Pattern::Group { 
+        let expected = Pattern::Group {
             op: Operation::Or,
             left: Box::new(Pattern::Fuzzy("Hello".to_owned())),
             right: Box::new(Pattern::Prefix("world".to_owned())),
@@ -416,7 +423,7 @@ mod test {
     fn test_and_parsing() -> anyhow::Result<()> {
         let pattern = "Hello ^world".parse::<Pattern>()?;
 
-        let expected = Pattern::Group { 
+        let expected = Pattern::Group {
             op: Operation::And,
             left: Box::new(Pattern::Fuzzy("Hello".to_owned())),
             right: Box::new(Pattern::Prefix("world".to_owned())),
@@ -428,12 +435,12 @@ mod test {
 
         Ok(())
     }
-    
+
     #[test]
     fn test_order_of_operations() -> anyhow::Result<()> {
         let pattern = "Hello | ^world 'foo".parse::<Pattern>()?;
 
-        let expected = Pattern::Group { 
+        let expected = Pattern::Group {
             op: Operation::And,
             left: Box::new(Pattern::Group {
                 op: Operation::Or,
@@ -449,12 +456,12 @@ mod test {
 
         Ok(())
     }
-   
+
     #[test]
     fn test_order_of_operations_with_group() -> anyhow::Result<()> {
         let pattern = "( Hello ^world ) | 'foo".parse::<Pattern>()?;
 
-        let expected = Pattern::Group { 
+        let expected = Pattern::Group {
             op: Operation::Or,
             left: Box::new(Pattern::Group {
                 op: Operation::And,
@@ -475,9 +482,7 @@ mod test {
     fn test_negated_pattern() -> anyhow::Result<()> {
         let pattern = "!'Hello".parse::<Pattern>()?;
 
-        let expected = Pattern::Negated(
-            Box::new(Pattern::Exact("Hello".to_owned()))
-        );
+        let expected = Pattern::Negated(Box::new(Pattern::Exact("Hello".to_owned())));
 
         if pattern != expected {
             bail!("Expected {:?}, got {:?}", expected, pattern);
@@ -485,14 +490,12 @@ mod test {
 
         Ok(())
     }
-    
+
     #[test]
     fn test_trailing_space() -> anyhow::Result<()> {
         let pattern = "!'Hello  ".parse::<Pattern>()?;
 
-        let expected = Pattern::Negated(
-            Box::new(Pattern::Exact("Hello".to_owned()))
-        );
+        let expected = Pattern::Negated(Box::new(Pattern::Exact("Hello".to_owned())));
 
         if pattern != expected {
             bail!("Expected {:?}, got {:?}", expected, pattern);
@@ -500,14 +503,12 @@ mod test {
 
         Ok(())
     }
-    
+
     #[test]
     fn test_leading_space() -> anyhow::Result<()> {
         let pattern = "   !'Hello".parse::<Pattern>()?;
 
-        let expected = Pattern::Negated(
-            Box::new(Pattern::Exact("Hello".to_owned()))
-        );
+        let expected = Pattern::Negated(Box::new(Pattern::Exact("Hello".to_owned())));
 
         if pattern != expected {
             bail!("Expected {:?}, got {:?}", expected, pattern);
@@ -515,14 +516,12 @@ mod test {
 
         Ok(())
     }
-    
+
     #[test]
     fn test_unclosed_group() -> anyhow::Result<()> {
         let pattern = "(!'Hello".parse::<Pattern>()?;
 
-        let expected = Pattern::Negated(
-            Box::new(Pattern::Exact("Hello".to_owned()))
-        );
+        let expected = Pattern::Negated(Box::new(Pattern::Exact("Hello".to_owned())));
 
         if pattern != expected {
             bail!("Expected {:?}, got {:?}", expected, pattern);
@@ -530,15 +529,14 @@ mod test {
 
         Ok(())
     }
-    
+
     #[test]
     fn test_deref_pattern() -> anyhow::Result<()> {
         let pattern = "!*Hello".parse::<Pattern>()?;
 
-        let expected = Pattern::Negated(
-            Box::new(Pattern::Deref(
-                Box::new(Pattern::Fuzzy("Hello".to_owned()))
-            )));
+        let expected = Pattern::Negated(Box::new(Pattern::Deref(Box::new(Pattern::Fuzzy(
+            "Hello".to_owned(),
+        )))));
 
         if pattern != expected {
             bail!("Expected {:?}, got {:?}", expected, pattern);
