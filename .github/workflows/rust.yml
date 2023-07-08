@@ -11,13 +11,7 @@ env:
 jobs:
   test:
     name: test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - target: aarch64-apple-darwin
-            os: macos-latest
- 
+    runs-on: macos-latest
     steps: 
       - name: Checkout 
         uses: actions/checkout@v3
@@ -25,10 +19,13 @@ jobs:
         uses: actions/cache@v2
         with: 
           path: | 
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ matrix.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -36,7 +33,6 @@ jobs:
           toolchain: stable
           profile: minimal
           override: true
-          target: ${{ matrix.target }}
         
       - name: Format Check
         uses: actions-rs/cargo@v1
@@ -48,7 +44,6 @@ jobs:
         uses: actions-rs/cargo@v1
         with: 
           command: clippy
-          args: --verbose
         
       - name: Testing
         uses: actions-rs/cargo@v1
@@ -75,10 +70,13 @@ jobs:
         uses: actions/cache@v2
         with: 
           path: | 
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ matrix.os }}-${{ matrix.target }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
