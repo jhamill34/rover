@@ -18,8 +18,8 @@ pub struct ValuePointer {
 impl ValuePointer {
     ///
     pub fn get<'value>(&self, root: &'value Value) -> anyhow::Result<&'value Value> {
-        self.tokens.iter().fold(Ok(root), |acc, next| {
-            acc.and_then(|acc| match acc {
+        self.tokens.iter().try_fold(root, |acc, next| {
+            match acc {
                 &Value::Array(ref arr) => {
                     let idx = next.parse::<usize>()?;
                     arr.get(idx)
@@ -31,14 +31,14 @@ impl ValuePointer {
                 &(Value::Null | Value::Bool(_) | Value::String(_) | Value::Number(_)) => {
                     Err(anyhow!("Cannot index into a non-object or array value"))
                 }
-            })
+            }
         })
     }
 
     ///
     pub fn get_mut<'value>(&self, root: &'value mut Value) -> anyhow::Result<&'value mut Value> {
-        self.tokens.iter().fold(Ok(root), |acc, next| {
-            acc.and_then(|acc| match acc {
+        self.tokens.iter().try_fold(root, |acc, next| {
+            match acc {
                 &mut Value::Array(ref mut arr) => {
                     let idx = next.parse::<usize>()?;
                     arr.get_mut(idx)
@@ -50,7 +50,7 @@ impl ValuePointer {
                 &mut (Value::Null | Value::Bool(_) | Value::String(_) | Value::Number(_)) => {
                     Err(anyhow!("Cannot index into a non-object or array value"))
                 }
-            })
+            }
         })
     }
 }

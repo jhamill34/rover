@@ -13,6 +13,11 @@
     clippy::question_mark_used,
     clippy::needless_borrowed_reference,
     // clippy::too_many_lines
+    clippy::single_call_fn,
+    clippy::ref_patterns,
+    clippy::absolute_paths,
+    clippy::min_ident_chars,
+    clippy::struct_field_names,
 )]
 
 //!

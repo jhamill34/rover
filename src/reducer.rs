@@ -486,6 +486,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                             } else if step.selected == to {
                                                 step.selected = from;
                                             } else {
+                                                log::error!("Corrupted undo stack, try reloading the document");
                                             }
                                         }
                                     }
@@ -512,6 +513,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                             } else if step.selected == to {
                                                 step.selected = from;
                                             } else {
+                                                log::error!("Corrupted undo stack, try reloading the document");
                                             }
                                         }
                                     }
@@ -616,6 +618,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                             } else if step.selected == to {
                                                 step.selected = from;
                                             } else {
+                                                log::error!("Corrupted redo stack, try reloading the document");
                                             }
                                         }
                                     }
@@ -642,6 +645,7 @@ pub fn reducer(mut state: State, action: Action) -> State {
                                             } else if step.selected == to {
                                                 step.selected = from;
                                             } else {
+                                                log::error!("Corrupted redo stack, try reloading the document");
                                             }
                                         }
                                     }
