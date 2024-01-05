@@ -65,7 +65,9 @@ impl Algorithm for Fuzzy {
             return 0_i16;
         }
 
-        let Ok(mut opt) = OPT.lock() else { return 0_i16 };
+        let Ok(mut opt) = OPT.lock() else {
+            return 0_i16;
+        };
 
         let target: Vec<char> = target.chars().collect();
         let query: Vec<char> = query.chars().collect();

@@ -442,12 +442,20 @@ where
                                 };
 
                                 let extention = PathBuf::from(&current_path);
-                                let Some(extention) = extention.extension().map(std::ffi::OsStr::to_string_lossy) else {
-                                    store.dispatch(Action::SetStatus {
-                                        message: StatusMessage::Err("Unable to determine file type".to_owned()), 
-                                        timeout: None,
-                                    }).await;
-                                    store.dispatch(Action::SetCurrentPage { page: Page::Nav }).await;
+                                let Some(extention) =
+                                    extention.extension().map(std::ffi::OsStr::to_string_lossy)
+                                else {
+                                    store
+                                        .dispatch(Action::SetStatus {
+                                            message: StatusMessage::Err(
+                                                "Unable to determine file type".to_owned(),
+                                            ),
+                                            timeout: None,
+                                        })
+                                        .await;
+                                    store
+                                        .dispatch(Action::SetCurrentPage { page: Page::Nav })
+                                        .await;
                                     continue;
                                 };
 
@@ -635,12 +643,20 @@ where
                                     .await;
 
                                 let extention = PathBuf::from(&current_path);
-                                let Some(extention) = extention.extension().map(std::ffi::OsStr::to_string_lossy) else {
-                                    store.dispatch(Action::SetStatus {
-                                        message: StatusMessage::Err("Unable to determine file type".to_owned()), 
-                                        timeout: None,
-                                    }).await;
-                                    store.dispatch(Action::SetCurrentPage { page: Page::Nav }).await;
+                                let Some(extention) =
+                                    extention.extension().map(std::ffi::OsStr::to_string_lossy)
+                                else {
+                                    store
+                                        .dispatch(Action::SetStatus {
+                                            message: StatusMessage::Err(
+                                                "Unable to determine file type".to_owned(),
+                                            ),
+                                            timeout: None,
+                                        })
+                                        .await;
+                                    store
+                                        .dispatch(Action::SetCurrentPage { page: Page::Nav })
+                                        .await;
                                     continue;
                                 };
 
