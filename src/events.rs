@@ -282,7 +282,7 @@ where
                                 let result = save_doc(&file_name, &doc);
 
                                 match result {
-                                    Ok(_) => {
+                                    Ok(()) => {
                                         store.dispatch(Action::Snapshot).await;
                                         store
                                             .dispatch(Action::SetStatus {
@@ -736,7 +736,7 @@ where
                                 };
 
                                 match file.write_all(existing_value.as_bytes()) {
-                                    Ok(_) => {
+                                    Ok(()) => {
                                         store
                                             .dispatch(Action::SetStatus {
                                                 message: StatusMessage::Ok(

@@ -1,6 +1,5 @@
 #![allow(
     clippy::separated_literal_suffix,
-    clippy::integer_arithmetic,
     clippy::arithmetic_side_effects,
     clippy::too_many_lines,
 
@@ -91,6 +90,7 @@ pub fn score(
                     existing = suffix;
                     break;
                 } else {
+                    log::debug!("No fuzzy cache for: {}", pattern);
                 }
             }
 
@@ -124,6 +124,7 @@ pub fn score(
                     existing = suffix;
                     break;
                 } else {
+                    log::debug!("No exact cache for: {}", pattern);
                 }
             }
 
@@ -156,6 +157,7 @@ pub fn score(
                     existing = suffix;
                     break;
                 } else {
+                    log::debug!("No prefix cache for: {}", pattern);
                 }
             }
 
@@ -189,6 +191,7 @@ pub fn score(
                     existing = suffix;
                     break;
                 } else {
+                    log::debug!("No suffix cache for: {}", pattern);
                 }
             }
 
@@ -277,6 +280,7 @@ fn score_deref(
                     existing = suffix;
                     break;
                 } else {
+                    log::debug!("No fuzzy cache for: {}", pattern);
                 }
             }
 
@@ -337,6 +341,7 @@ fn score_deref(
                     existing = suffix;
                     break;
                 } else {
+                    log::debug!("No exact cache for: {}", pattern);
                 }
             }
 
@@ -414,6 +419,7 @@ fn score_deref(
                     existing = suffix;
                     break;
                 } else {
+                    log::debug!("No prefix cache for: {}", pattern);
                 }
             }
 
@@ -491,6 +497,7 @@ fn score_deref(
                     existing = suffix;
                     break;
                 } else {
+                    log::debug!("No suffix cache for: {}", pattern);
                 }
             }
 

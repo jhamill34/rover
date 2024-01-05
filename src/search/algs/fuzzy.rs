@@ -1,7 +1,6 @@
 #![allow(
     clippy::separated_literal_suffix,
-    clippy::integer_arithmetic,
-    clippy::arithmetic_side_effects
+    clippy::arithmetic_side_effects,
 )]
 
 //!
