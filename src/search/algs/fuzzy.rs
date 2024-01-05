@@ -1,7 +1,4 @@
-#![allow(
-    clippy::separated_literal_suffix,
-    clippy::arithmetic_side_effects,
-)]
+#![allow(clippy::separated_literal_suffix, clippy::arithmetic_side_effects)]
 
 //!
 

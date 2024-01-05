@@ -18,38 +18,34 @@ pub struct ValuePointer {
 impl ValuePointer {
     ///
     pub fn get<'value>(&self, root: &'value Value) -> anyhow::Result<&'value Value> {
-        self.tokens.iter().try_fold(root, |acc, next| {
-            match acc {
-                &Value::Array(ref arr) => {
-                    let idx = next.parse::<usize>()?;
-                    arr.get(idx)
-                        .ok_or_else(|| anyhow!("Index {} out of bounds", idx))
-                }
-                &Value::Object(ref obj) => obj
-                    .get(next)
-                    .ok_or_else(|| anyhow!("Key {} not found", next)),
-                &(Value::Null | Value::Bool(_) | Value::String(_) | Value::Number(_)) => {
-                    Err(anyhow!("Cannot index into a non-object or array value"))
-                }
+        self.tokens.iter().try_fold(root, |acc, next| match acc {
+            &Value::Array(ref arr) => {
+                let idx = next.parse::<usize>()?;
+                arr.get(idx)
+                    .ok_or_else(|| anyhow!("Index {} out of bounds", idx))
+            }
+            &Value::Object(ref obj) => obj
+                .get(next)
+                .ok_or_else(|| anyhow!("Key {} not found", next)),
+            &(Value::Null | Value::Bool(_) | Value::String(_) | Value::Number(_)) => {
+                Err(anyhow!("Cannot index into a non-object or array value"))
             }
         })
     }
 
     ///
     pub fn get_mut<'value>(&self, root: &'value mut Value) -> anyhow::Result<&'value mut Value> {
-        self.tokens.iter().try_fold(root, |acc, next| {
-            match acc {
-                &mut Value::Array(ref mut arr) => {
-                    let idx = next.parse::<usize>()?;
-                    arr.get_mut(idx)
-                        .ok_or_else(|| anyhow!("Index {} out of bounds", idx))
-                }
-                &mut Value::Object(ref mut obj) => obj
-                    .get_mut(next)
-                    .ok_or_else(|| anyhow!("Key {} not found", next)),
-                &mut (Value::Null | Value::Bool(_) | Value::String(_) | Value::Number(_)) => {
-                    Err(anyhow!("Cannot index into a non-object or array value"))
-                }
+        self.tokens.iter().try_fold(root, |acc, next| match acc {
+            &mut Value::Array(ref mut arr) => {
+                let idx = next.parse::<usize>()?;
+                arr.get_mut(idx)
+                    .ok_or_else(|| anyhow!("Index {} out of bounds", idx))
+            }
+            &mut Value::Object(ref mut obj) => obj
+                .get_mut(next)
+                .ok_or_else(|| anyhow!("Key {} not found", next)),
+            &mut (Value::Null | Value::Bool(_) | Value::String(_) | Value::Number(_)) => {
+                Err(anyhow!("Cannot index into a non-object or array value"))
             }
         })
     }
